@@ -16,8 +16,7 @@ export async function createApplication(data: ApplicationInput) {
       description: data.description,
       amount_requested: data.amount_requested,
       status: 'draft',
-      user_id: user.id,
-      user_email: user.email
+      user_id: user.id
     })
     .select('*')
     .single();
