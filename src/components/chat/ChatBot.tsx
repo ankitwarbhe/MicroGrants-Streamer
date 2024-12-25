@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import { GeminiChatService, ChatMessage } from '../../services/gemini';
+import { useLocation } from 'react-router-dom';
 
 interface ChatBotProps {
   userId: string;
@@ -11,6 +12,7 @@ interface ChatBotProps {
 let chatServiceRef: GeminiChatService | null = null;
 
 export function ChatBot({ userId, isAdmin }: ChatBotProps) {
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -19,19 +21,33 @@ export function ChatBot({ userId, isAdmin }: ChatBotProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Get current page from pathname
+  const getCurrentPage = () => {
+    const path = location.pathname;
+    if (path === '/') return 'home';
+    if (path.startsWith('/applications/')) return 'application';
+    if (path === '/dashboard') return 'dashboard';
+    if (path === '/about') return 'about';
+    return path.replace('/', '');
+  };
+
   // Initialize chat service
   useEffect(() => {
     try {
       if (!chatServiceRef) {
+        console.log('Creating new GeminiChatService instance');
         chatServiceRef = new GeminiChatService();
       }
+      const currentPage = getCurrentPage();
+      console.log('Setting user and page context:', { userId, isAdmin, currentPage });
       chatServiceRef.setUser(userId, isAdmin);
+      chatServiceRef.setCurrentPage(currentPage);
       setError(null);
     } catch (err) {
       console.error('Error initializing chat service:', err);
       setError('Failed to initialize chat service. Please check your API key configuration.');
     }
-  }, [userId, isAdmin]);
+  }, [userId, isAdmin, location.pathname]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -52,16 +68,19 @@ export function ChatBot({ userId, isAdmin }: ChatBotProps) {
     setError(null);
 
     try {
+      console.log('Sending message:', userMessage);
       const response = await chatServiceRef.sendMessage(userMessage);
+      console.log('Received response:', response);
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
     } catch (error) {
       console.error('Chat error:', error);
-      setError('Failed to get response from AI. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get response from AI. Please try again.';
+      setError(errorMessage);
       setMessages(prev => [
         ...prev,
         { 
           role: 'assistant', 
-          content: 'Sorry, I encountered an error. Please try again.' 
+          content: `Error: ${errorMessage}` 
         }
       ]);
     } finally {
