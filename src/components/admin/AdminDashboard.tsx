@@ -19,6 +19,7 @@ export function AdminDashboard() {
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<'all' | Application['status']>('all');
   const { user } = useAuth();
   
   const ITEMS_PER_PAGE = 5;
@@ -46,20 +47,37 @@ export function AdminDashboard() {
         const from = (currentPage - 1) * ITEMS_PER_PAGE;
         const to = from + ITEMS_PER_PAGE - 1;
 
-        // First, get total count
-        const { count, error: countError } = await supabase
+        // Build the query
+        let query = supabase
           .from('applications')
-          .select('*', { count: 'exact', head: true });
+          .select('*', { count: 'exact' });
+
+        // Add status filter if not 'all'
+        if (statusFilter !== 'all') {
+          query = query.eq('status', statusFilter);
+        }
+
+        // Get total count with filters
+        const { count, error: countError } = await query;
 
         if (countError) throw countError;
         setTotalCount(count || 0);
 
-        // Then fetch paginated data
-        const { data, error: applicationsError } = await supabase
+        // Then fetch paginated data with the same filters
+        let dataQuery = supabase
           .from('applications')
           .select('*')
-          .order('created_at', { ascending: false })
-          .range(from, to);
+          .order('created_at', { ascending: false });
+
+        // Add status filter if not 'all'
+        if (statusFilter !== 'all') {
+          dataQuery = dataQuery.eq('status', statusFilter);
+        }
+
+        // Add pagination
+        dataQuery = dataQuery.range(from, to);
+
+        const { data, error: applicationsError } = await dataQuery;
 
         if (applicationsError) {
           console.error('Error details:', applicationsError);
@@ -79,7 +97,7 @@ export function AdminDashboard() {
     if (user) {
       fetchApplications();
     }
-  }, [user, currentPage]);
+  }, [user, currentPage, statusFilter]);
 
   if (!user) {
     return (
@@ -213,6 +231,24 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end mb-4">
+        <div className="relative inline-block text-left">
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value as typeof statusFilter);
+              setCurrentPage(1); // Reset to first page when filter changes
+            }}
+            className="block w-48 rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+          >
+            <option value="all">All Applications</option>
+            <option value="draft">Draft</option>
+            <option value="submitted">Submitted</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
