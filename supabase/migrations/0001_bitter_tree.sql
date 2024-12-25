@@ -84,3 +84,14 @@ CREATE POLICY "Admins can update applications"
       AND auth.users.raw_user_meta_data->>'role' = 'admin'
     )
   );
+
+-- Allow applicants to update their own applications
+CREATE POLICY "Applicants can update own applications"
+  ON applications
+  FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (
+    auth.uid() = user_id 
+    AND status = 'draft' -- Only allow updates when application is in draft status
+  );
