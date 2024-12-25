@@ -37,6 +37,7 @@ WITH CHECK (
   ) = 'applicant'
 );
 
+
 CREATE POLICY "Admins can read all applications"
 ON applications FOR SELECT
 TO authenticated

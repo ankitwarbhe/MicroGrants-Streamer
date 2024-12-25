@@ -6,16 +6,21 @@ export function AuthForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
       if (isSignUp) {
         await signUp(email, password);
+        setSuccess('Email verification sent! Please check your inbox.');
+        setEmail('');
+        setPassword('');
       } else {
         await signIn(email, password);
       }
@@ -37,6 +42,11 @@ export function AuthForm() {
         {error && (
           <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
             {error}
+          </div>
+        )}
+        {success && (
+          <div className="bg-green-50 text-green-700 p-3 rounded-md text-sm">
+            {success}
           </div>
         )}
         <div className="space-y-4">

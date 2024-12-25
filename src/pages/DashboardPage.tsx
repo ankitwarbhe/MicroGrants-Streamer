@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ApplicationsList } from '../components/applications/ApplicationsList';
+import { AdminDashboard } from '../components/admin/AdminDashboard';
 import { PlusCircle } from 'lucide-react';
 
 export function DashboardPage() {
@@ -26,14 +27,7 @@ export function DashboardPage() {
       </div>
 
       <div className="bg-white shadow rounded-lg p-6">
-        {isAdmin ? (
-          <div>
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Applications Overview</h2>
-            {/* Admin dashboard content will be implemented later */}
-          </div>
-        ) : (
-          <ApplicationsList />
-        )}
+        {isAdmin ? <AdminDashboard /> : <ApplicationsList />}
       </div>
     </div>
   );
