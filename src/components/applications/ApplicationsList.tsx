@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getUserApplications } from '../../services/applications';
 import type { Application } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, ChevronLeft, ChevronLeftCircle, ChevronRightCircle } from 'lucide-react';
 
 const STATUS_BADGES = {
   draft: { color: 'bg-gray-100 text-gray-800', icon: Clock },
@@ -12,16 +12,21 @@ const STATUS_BADGES = {
   rejected: { color: 'bg-red-100 text-red-800', icon: XCircle },
 };
 
+const PAGE_SIZE = 5;
+
 export function ApplicationsList() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     async function fetchApplications() {
       try {
-        const data = await getUserApplications();
-        setApplications(data);
+        const response = await getUserApplications(currentPage, PAGE_SIZE);
+        setApplications(response.data);
+        setTotalCount(response.count);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load applications');
       } finally {
@@ -30,7 +35,17 @@ export function ApplicationsList() {
     }
 
     fetchApplications();
-  }, []);
+  }, [currentPage]);
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(1, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+  };
 
   if (loading) {
     return (
@@ -48,7 +63,7 @@ export function ApplicationsList() {
     );
   }
 
-  if (applications.length === 0) {
+  if (applications.length === 0 && currentPage === 1) {
     return (
       <div className="text-center py-6">
         <FileText className="mx-auto h-12 w-12 text-gray-400" />
@@ -61,52 +76,117 @@ export function ApplicationsList() {
   }
 
   return (
-    <div className="overflow-hidden bg-white shadow sm:rounded-md">
-      <ul className="divide-y divide-gray-200">
-        {applications.map((application) => {
-          const StatusIcon = STATUS_BADGES[application.status].icon;
-          return (
-            <li key={application.id}>
-              <Link
-                to={`/applications/${application.id}`}
-                className="block hover:bg-gray-50"
-              >
-                <div className="px-4 py-4 sm:px-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center flex-1 min-w-0">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-indigo-600 truncate">
-                          {application.title}
-                        </p>
-                        <div className="mt-1">
-                          <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGES[application.status].color}`}>
-                            <StatusIcon className="mr-1 h-4 w-4" />
-                            {application.status.replace('_', ' ').toUpperCase()}
+    <div className="space-y-4">
+      <div className="overflow-hidden bg-white shadow sm:rounded-md">
+        <ul className="divide-y divide-gray-200">
+          {applications.map((application) => {
+            const StatusIcon = STATUS_BADGES[application.status].icon;
+            return (
+              <li key={application.id}>
+                <Link
+                  to={`/applications/${application.id}`}
+                  className="block hover:bg-gray-50"
+                >
+                  <div className="px-4 py-4 sm:px-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center flex-1 min-w-0">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-indigo-600 truncate">
+                            {application.title}
+                          </p>
+                          <div className="mt-1">
+                            <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGES[application.status].color}`}>
+                              <StatusIcon className="mr-1 h-4 w-4" />
+                              {application.status.replace('_', ' ').toUpperCase()}
+                            </div>
                           </div>
                         </div>
                       </div>
+                      <div className="ml-2 flex items-center">
+                        <p className="text-sm text-gray-500 mr-4">
+                          ${application.amount_requested.toLocaleString()}
+                        </p>
+                        <ChevronRight className="h-5 w-5 text-gray-400" />
+                      </div>
                     </div>
-                    <div className="ml-2 flex items-center">
-                      <p className="text-sm text-gray-500 mr-4">
-                        ${application.amount_requested.toLocaleString()}
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500 line-clamp-2">
+                        {application.description}
                       </p>
-                      <ChevronRight className="h-5 w-5 text-gray-400" />
+                      <div className="mt-2 text-sm text-gray-500">
+                        Submitted {new Date(application.created_at).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500 line-clamp-2">
-                      {application.description}
-                    </p>
-                    <div className="mt-2 text-sm text-gray-500">
-                      Submitted {new Date(application.created_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg shadow">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <button
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-medium">{((currentPage - 1) * PAGE_SIZE) + 1}</span> to{' '}
+                <span className="font-medium">{Math.min(currentPage * PAGE_SIZE, totalCount)}</span> of{' '}
+                <span className="font-medium">{totalCount}</span> results
+              </p>
+            </div>
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                <button
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Previous</span>
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                      page === currentPage
+                        ? 'z-10 bg-indigo-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+                        : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Next</span>
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

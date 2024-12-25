@@ -29,18 +29,41 @@ export async function createApplication(data: ApplicationInput) {
   return application;
 }
 
-export async function getUserApplications() {
+export interface PaginatedResponse<T> {
+  data: T[];
+  count: number;
+}
+
+export async function getUserApplications(
+  page: number = 1,
+  pageSize: number = 10
+): Promise<PaginatedResponse<Application>> {
+  // First, get the total count
+  const { count, error: countError } = await supabase
+    .from('applications')
+    .select('*', { count: 'exact', head: true });
+
+  if (countError) {
+    console.error('Error getting applications count:', countError);
+    throw new Error('Failed to fetch applications count. Please try again.');
+  }
+
+  // Then get the paginated data
   const { data: applications, error } = await supabase
     .from('applications')
     .select('*')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range((page - 1) * pageSize, page * pageSize - 1);
 
   if (error) {
     console.error('Error fetching applications:', error);
     throw new Error('Failed to fetch applications. Please try again.');
   }
 
-  return applications;
+  return {
+    data: applications || [],
+    count: count || 0
+  };
 }
 
 export async function getApplicationById(id: string) {
