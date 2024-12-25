@@ -121,3 +121,55 @@ export async function submitApplication(id: string) {
 
   return application;
 }
+
+export async function approveApplication(id: string, feedback?: string) {
+  const { data: application, error } = await supabase
+    .from('applications')
+    .update({ 
+      status: 'approved',
+      feedback: feedback || null 
+    })
+    .eq('id', id)
+    .eq('status', 'submitted') // Only allow approving submitted applications
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('Error approving application:', error);
+    throw new Error('Failed to approve application. Please try again.');
+  }
+
+  if (!application) {
+    throw new Error('Application not found or not in submitted state');
+  }
+
+  return application;
+}
+
+export async function rejectApplication(id: string, feedback: string) {
+  if (!feedback) {
+    throw new Error('Feedback is required when rejecting an application');
+  }
+
+  const { data: application, error } = await supabase
+    .from('applications')
+    .update({ 
+      status: 'rejected',
+      feedback: feedback 
+    })
+    .eq('id', id)
+    .eq('status', 'submitted') // Only allow rejecting submitted applications
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('Error rejecting application:', error);
+    throw new Error('Failed to reject application. Please try again.');
+  }
+
+  if (!application) {
+    throw new Error('Application not found or not in submitted state');
+  }
+
+  return application;
+}

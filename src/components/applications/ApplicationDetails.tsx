@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getApplicationById, updateApplication, submitApplication } from '../../services/applications';
+import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication } from '../../services/applications';
 import type { Application } from '../../types';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 const STATUS_BADGES = {
   draft: { color: 'bg-gray-100 text-gray-800', icon: Clock },
@@ -21,6 +22,12 @@ export function ApplicationDetails() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<Partial<Application>>({});
   const [updateLoading, setUpdateLoading] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
+  const { user } = useAuth();
+
+  const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
 
   useEffect(() => {
     async function fetchApplication() {
@@ -96,6 +103,41 @@ export function ApplicationDetails() {
     }
   };
 
+  const handleApprove = async () => {
+    if (!id) return;
+    setUpdateLoading(true);
+    try {
+      const updated = await approveApplication(id, feedback);
+      setApplication(updated);
+      setShowFeedbackModal(false);
+      setFeedback('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to approve application');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!id || !feedback.trim()) return;
+    setUpdateLoading(true);
+    try {
+      const updated = await rejectApplication(id, feedback);
+      setApplication(updated);
+      setShowFeedbackModal(false);
+      setFeedback('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reject application');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  const openFeedbackModal = (type: 'approve' | 'reject') => {
+    setActionType(type);
+    setShowFeedbackModal(true);
+  };
+
   if (loading) {
     return (
       <div className="text-center py-4">
@@ -145,12 +187,84 @@ export function ApplicationDetails() {
               </button>
             </>
           )}
+          {isAdmin && application?.status === 'submitted' && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => openFeedbackModal('approve')}
+                disabled={updateLoading}
+                className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Approve
+              </button>
+              <button
+                onClick={() => openFeedbackModal('reject')}
+                disabled={updateLoading}
+                className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Reject
+              </button>
+            </div>
+          )}
           <div className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${STATUS_BADGES[application.status].color}`}>
             <StatusIcon className="mr-2 h-5 w-5" />
             {application.status.replace('_', ' ').toUpperCase()}
           </div>
         </div>
       </div>
+
+      {showFeedbackModal && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              {actionType === 'approve' ? 'Approve Application' : 'Reject Application'}
+            </h3>
+            <div className="mb-4">
+              <label htmlFor="feedback" className="block text-sm font-medium text-gray-700 mb-2">
+                Feedback {actionType === 'reject' && <span className="text-red-500">*</span>}
+              </label>
+              <textarea
+                id="feedback"
+                rows={4}
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder={actionType === 'approve' ? 'Optional feedback for approval' : 'Required feedback for rejection'}
+                required={actionType === 'reject'}
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowFeedbackModal(false);
+                  setFeedback('');
+                }}
+                className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={actionType === 'approve' ? handleApprove : handleReject}
+                disabled={actionType === 'reject' && !feedback.trim()}
+                className={`inline-flex justify-center px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  actionType === 'approve'
+                    ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                    : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                } disabled:opacity-50`}
+              >
+                {updateLoading
+                  ? 'Processing...'
+                  : actionType === 'approve'
+                  ? 'Approve'
+                  : 'Reject'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
         {isEditing ? (
