@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { getUserApplications } from '../../services/applications';
 import type { Application } from '../../types';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, ChevronLeft, ChevronLeftCircle, ChevronRightCircle } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { ChatBot } from '../chat/ChatBot';
 
 const STATUS_BADGES = {
   draft: { color: 'bg-gray-100 text-gray-800', icon: Clock },
@@ -15,6 +17,7 @@ const STATUS_BADGES = {
 const PAGE_SIZE = 5;
 
 export function ApplicationsList() {
+  const { user } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -186,6 +189,12 @@ export function ApplicationsList() {
             </div>
           </div>
         </div>
+      )}
+      {user && (
+        <ChatBot 
+          userId={user.id} 
+          isAdmin={false}
+        />
       )}
     </div>
   );

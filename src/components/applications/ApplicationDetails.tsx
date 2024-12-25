@@ -4,6 +4,7 @@ import { getApplicationById, updateApplication, submitApplication, approveApplic
 import type { Application } from '../../types';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { ChatBot } from '../chat/ChatBot';
 
 const STATUS_BADGES = {
   draft: { color: 'bg-gray-100 text-gray-800', icon: Clock },
@@ -382,6 +383,13 @@ export function ApplicationDetails() {
           </>
         )}
       </div>
+
+      {user && (
+        <ChatBot 
+          userId={user.id} 
+          isAdmin={isAdmin}
+        />
+      )}
     </div>
   );
 } 

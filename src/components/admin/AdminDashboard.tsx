@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import type { Application } from '../../types';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { ChatBot } from '../chat/ChatBot';
 
 const STATUS_BADGES = {
   draft: { color: 'bg-gray-100 text-gray-800', icon: Clock },
@@ -316,6 +317,13 @@ export function AdminDashboard() {
         </table>
       </div>
       <PaginationControls />
+      
+      {user && (
+        <ChatBot 
+          userId={user.id} 
+          isAdmin={true}
+        />
+      )}
     </div>
   );
 }
