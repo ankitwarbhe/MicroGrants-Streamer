@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import type { Application } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, DollarSign } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const STATUS_BADGES = {
@@ -17,7 +17,11 @@ export function AdminDashboard() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const { user } = useAuth();
+  
+  const ITEMS_PER_PAGE = 5;
 
   useEffect(() => {
     async function fetchApplications() {
@@ -38,11 +42,24 @@ export function AdminDashboard() {
           return;
         }
 
-        // Fetch applications with error logging
+        // Modify the fetch query to include pagination
+        const from = (currentPage - 1) * ITEMS_PER_PAGE;
+        const to = from + ITEMS_PER_PAGE - 1;
+
+        // First, get total count
+        const { count, error: countError } = await supabase
+          .from('applications')
+          .select('*', { count: 'exact', head: true });
+
+        if (countError) throw countError;
+        setTotalCount(count || 0);
+
+        // Then fetch paginated data
         const { data, error: applicationsError } = await supabase
           .from('applications')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .range(from, to);
 
         if (applicationsError) {
           console.error('Error details:', applicationsError);
@@ -62,7 +79,7 @@ export function AdminDashboard() {
     if (user) {
       fetchApplications();
     }
-  }, [user]);
+  }, [user, currentPage]);
 
   if (!user) {
     return (
@@ -99,6 +116,100 @@ export function AdminDashboard() {
       </div>
     );
   }
+
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+
+  // Add this pagination controls component
+  const PaginationControls = () => {
+    // Helper function to generate page numbers array
+    const getPageNumbers = () => {
+      const pageNumbers = [];
+      const maxVisiblePages = 5;
+      let start = Math.max(1, currentPage - 2);
+      let end = Math.min(totalPages, start + maxVisiblePages - 1);
+      
+      // Adjust start if we're near the end
+      if (end === totalPages) {
+        start = Math.max(1, end - maxVisiblePages + 1);
+      }
+
+      for (let i = start; i <= end; i++) {
+        pageNumbers.push(i);
+      }
+      return pageNumbers;
+    };
+
+    return (
+      <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+        <div className="flex flex-1 justify-between sm:hidden">
+          <button
+            onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+            disabled={currentPage === 1}
+            className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-gray-700 px-4 py-2">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+            disabled={currentPage === totalPages}
+            className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+        <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{((currentPage - 1) * ITEMS_PER_PAGE) + 1}</span> to{' '}
+              <span className="font-medium">
+                {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)}
+              </span> of{' '}
+              <span className="font-medium">{totalCount}</span> results
+            </p>
+          </div>
+          <div>
+            <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+              <button
+                onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                disabled={currentPage === 1}
+                className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+              >
+                <span className="sr-only">Previous</span>
+                <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+              </button>
+              
+              {/* Page Numbers */}
+              {getPageNumbers().map(pageNum => (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                    pageNum === currentPage
+                      ? 'z-10 bg-indigo-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+                      : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                disabled={currentPage === totalPages}
+                className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+              >
+                <span className="sr-only">Next</span>
+                <ChevronRight className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -168,6 +279,7 @@ export function AdminDashboard() {
           </tbody>
         </table>
       </div>
+      <PaginationControls />
     </div>
   );
 }
