@@ -8,6 +8,7 @@ export interface User {
 export interface Application {
   id: string;
   user_id: string;
+  user_email: string;
   title: string;
   description: string;
   amount_requested: number;

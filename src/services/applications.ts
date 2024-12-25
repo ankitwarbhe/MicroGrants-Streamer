@@ -1,11 +1,11 @@
 import { supabase } from '../lib/supabase';
 import type { Application } from '../types';
 
-type ApplicationInput = Omit<Application, 'id' | 'user_id' | 'status' | 'created_at' | 'updated_at'>;
+type ApplicationInput = Omit<Application, 'id' | 'user_id' | 'status' | 'created_at' | 'updated_at' | 'user_email'>;
 
 export async function createApplication(data: ApplicationInput) {
-  const user = await supabase.auth.getUser();
-  if (!user.data.user) {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (!user) {
     throw new Error('You must be logged in to create an application');
   }
 
@@ -16,7 +16,8 @@ export async function createApplication(data: ApplicationInput) {
       description: data.description,
       amount_requested: data.amount_requested,
       status: 'draft',
-      user_id: user.data.user.id
+      user_id: user.id,
+      user_email: user.email
     })
     .select('*')
     .single();
