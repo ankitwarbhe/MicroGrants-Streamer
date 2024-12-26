@@ -79,13 +79,35 @@ export class GeminiChatService {
 
   private async getApplicationsContext(): Promise<string> {
     try {
-      let query = supabase.from('applications').select('*');
-      
+      // Define types for application data
+      type BaseApplication = {
+        title: string;
+        description: string;
+        amount_requested: number;
+        status: string;
+        created_at: string;
+        feedback?: string;
+      };
+
+      type AdminApplication = BaseApplication & {
+        id: string;
+        user_email: string;
+      };
+
+      // Build the query
+      const query = supabase
+        .from('applications')
+        .select(this.isAdmin 
+          ? 'id, user_email, title, description, amount_requested, status, created_at, feedback'
+          : 'title, description, amount_requested, status, created_at, feedback'
+        );
+
       // If not admin, only show user's own applications
       if (!this.isAdmin && this.userId) {
-        query = query.eq('user_id', this.userId);
+        query.eq('user_id', this.userId);
       }
 
+      // Execute the query
       const { data: applications, error } = await query;
 
       if (error) {
@@ -97,17 +119,35 @@ export class GeminiChatService {
         return 'No applications found in the database.';
       }
 
-      // Format applications into a readable context string
-      const contextStr = applications.map(app => `
-        Application ID: ${app.id}
-        Title: ${app.title}
-        Status: ${app.status}
-        Amount: $${app.amount_requested}
-        Description: ${app.description}
-        Created: ${new Date(app.created_at).toLocaleDateString()}
-      `).join('\n---\n');
+      // Format applications based on user role
+      const contextStr = applications.map((app: any) => {
+        const baseInfo = `
+          Title: ${app.title}
+          Status: ${app.status}
+          Amount: $${app.amount_requested}
+          Description: ${app.description}
+          Created: ${new Date(app.created_at).toLocaleDateString()}
+          ${app.feedback ? `Feedback: ${app.feedback}` : ''}
+        `;
 
-      return `Here are the relevant applications:\n${contextStr}`;
+        // Add admin-only information if user is admin
+        if (this.isAdmin && app.id && app.user_email) {
+          return `
+            Application ID: ${app.id}
+            User Email: ${app.user_email}
+            ${baseInfo}
+          `;
+        }
+
+        return baseInfo;
+      }).join('\n---\n');
+
+      // Return role-specific context message
+      const roleContext = this.isAdmin 
+        ? 'Here are all grant applications in the system:'
+        : 'Here are your grant applications:';
+
+      return `${roleContext}\n${contextStr}`;
     } catch (error) {
       console.error('Error fetching applications context:', error);
       return 'Unable to fetch applications data.';
