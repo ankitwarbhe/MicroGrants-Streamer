@@ -1,7 +1,12 @@
 import { useState, FormEvent, ChangeEvent } from 'react';
 import { docuSignService } from '../../services/docusign';
 
-export function SignatureRequest() {
+interface SignatureRequestProps {
+  applicationId: string;
+  onComplete?: (envelopeId: string) => void;
+}
+
+export function SignatureRequest({ applicationId, onComplete }: SignatureRequestProps) {
   const [file, setFile] = useState<File | null>(null);
   const [signerEmail, setSignerEmail] = useState('');
   const [signerName, setSignerName] = useState('');
@@ -37,7 +42,8 @@ export function SignatureRequest() {
             documentPath: base64String.split(',')[1], // Remove data URL prefix
             signerEmail,
             signerName,
-            documentName: file.name
+            documentName: file.name,
+            applicationId // Include the application ID
           });
           
           if (response.envelopeId && response.status) {
@@ -45,22 +51,23 @@ export function SignatureRequest() {
               envelopeId: response.envelopeId,
               status: response.status
             });
+            onComplete?.(response.envelopeId);
           } else {
             throw new Error('Invalid response from DocuSign');
           }
         } catch (error) {
-          setError(error instanceof Error ? error.message : 'Failed to send document for signature');
+          setError(error instanceof Error ? error.message : 'Failed to send document');
         } finally {
           setIsLoading(false);
         }
       };
 
       reader.onerror = () => {
-        setError('Failed to read the file');
+        setError('Failed to read file');
         setIsLoading(false);
       };
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to send document for signature');
+      setError(error instanceof Error ? error.message : 'Failed to send document');
       setIsLoading(false);
     }
   };

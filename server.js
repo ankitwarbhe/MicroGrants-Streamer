@@ -132,12 +132,13 @@ app.post('/api/docusign/auth', async (req, res) => {
 // DocuSign envelope creation endpoint
 app.post('/api/docusign/envelopes', async (req, res) => {
   try {
-    const { accountId, envelope, accessToken } = req.body;
+    const { accountId, envelope, accessToken, applicationId } = req.body;
     console.log('Creating envelope for account:', accountId);
     console.log('Envelope data:', {
       subject: envelope.emailSubject,
       documentName: envelope.documents?.[0]?.name,
-      signerEmail: envelope.recipients?.signers?.[0]?.email
+      signerEmail: envelope.recipients?.signers?.[0]?.email,
+      applicationId
     });
 
     // Forward the request to DocuSign
@@ -162,6 +163,17 @@ app.post('/api/docusign/envelopes', async (req, res) => {
     if (!response.ok) {
       console.error('DocuSign error details:', data);
       throw new Error(`DocuSign error: ${JSON.stringify(data)}`);
+    }
+
+    // Store the envelope ID with the application
+    if (applicationId && data.envelopeId) {
+      // TODO: Add your database update logic here
+      // Example:
+      // await db.query(
+      //   'UPDATE applications SET envelope_id = $1, status = $2 WHERE id = $3',
+      //   [data.envelopeId, 'pending_signature', applicationId]
+      // );
+      console.log(`Stored envelope ID ${data.envelopeId} for application ${applicationId}`);
     }
 
     res.json(data);

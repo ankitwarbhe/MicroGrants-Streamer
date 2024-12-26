@@ -1,4 +1,3 @@
-import { ApiClient, EnvelopesApi } from 'docusign-esign';
 import { Buffer } from 'buffer';
 
 interface SignatureRequest {
@@ -6,6 +5,7 @@ interface SignatureRequest {
   signerEmail: string;
   signerName: string;
   documentName?: string;
+  applicationId: string;
 }
 
 interface DocuSignError {
@@ -93,183 +93,99 @@ async function findAuthServer(startPort: number = 3001, maxPort: number = 3010):
 }
 
 export class DocuSignService {
-  private client: ApiClient;
-  private envelopesApi: EnvelopesApi;
   private authServerUrl: string | null = null;
-  
+
   constructor() {
     console.log('Initializing DocuSign service...');
-    console.log('Auth server:', env.authServer);
-    
-    // Initialize DocuSign client with minimal configuration
-    this.client = new ApiClient({
-      basePath: env.authServer,
-      oAuthBasePath: 'https://account-d.docusign.com'
-    });
-
-    // Only set essential headers
-    this.client.addDefaultHeader('Content-Type', 'application/json');
-    
-    this.envelopesApi = new EnvelopesApi(this.client);
   }
 
   async getAuthServerUrl(): Promise<string> {
-    if (!this.authServerUrl) {
-      // Find the authentication server
-      this.authServerUrl = await findAuthServer();
-      console.log('Found authentication server at:', this.authServerUrl);
+    if (this.authServerUrl) {
+      return this.authServerUrl;
     }
+
+    // Try to find the auth server
+    this.authServerUrl = `http://localhost:3001`;
     return this.authServerUrl;
-  }
-
-  private async authenticate() {
-    console.log('Starting authentication...');
-    const { privateKey, integrationKey, userId } = env;
-
-    if (!privateKey || !integrationKey || !userId) {
-      console.error('Missing credentials:', { 
-        hasPrivateKey: !!privateKey,
-        hasIntegrationKey: !!integrationKey,
-        hasUserId: !!userId 
-      });
-      throw new Error('DocuSign credentials not configured');
-    }
-
-    try {
-      // Format the private key
-      const formattedKey = formatPrivateKey(privateKey);
-      console.log('Private key formatted successfully');
-
-      // Find the authentication server if we haven't already
-      if (!this.authServerUrl) {
-        console.log('Looking for authentication server...');
-        this.authServerUrl = await findAuthServer();
-        console.log('Found authentication server at:', this.authServerUrl);
-      }
-
-      // Log the authentication attempt
-      console.log('Attempting authentication via local server...');
-
-      // Call our authentication server
-      const response = await fetch(`${this.authServerUrl}/api/docusign/auth`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          integrationKey,
-          userId,
-          privateKey: formattedKey
-        })
-      });
-
-      console.log('Auth server response status:', response.status);
-      const data = await response.json();
-
-      if (!response.ok || !data.access_token) {
-        console.error('Auth server error response:', data);
-        throw new Error(data.error || 'Failed to get access token');
-      }
-
-      this.client.addDefaultHeader('Authorization', `Bearer ${data.access_token}`);
-      console.log('Authentication successful');
-    } catch (error) {
-      console.error('Authentication error details:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      throw new Error(`Failed to authenticate with DocuSign: ${errorMessage}`);
-    }
   }
 
   async sendDocumentForSignature({
     documentPath,
     signerEmail,
     signerName,
-    documentName = 'Document for Signature'
+    documentName = 'Document for Signature',
+    applicationId
   }: SignatureRequest) {
     try {
-      console.log('Starting document signature process...');
-      await this.authenticate();
+      const authServerUrl = await this.getAuthServerUrl();
 
-      if (!env.accountId) {
-        throw new Error('DocuSign account ID not configured');
-      }
-
-      console.log('Creating envelope with:', {
-        documentName,
-        signerEmail,
-        signerName
-      });
-
-      // Create the envelope definition
-      const envelope: any = {
-        emailSubject: `Please sign: ${documentName}`,
-        documents: [{
-          documentBase64: documentPath,
-          name: documentName,
-          fileExtension: 'pdf',
-          documentId: '1'
-        }],
-        recipients: {
-          signers: [{
-            email: signerEmail,
-            name: signerName,
-            recipientId: '1',
-            routingOrder: '1',
-            tabs: {
-              signHereTabs: [{
-                anchorString: '/sig1/',
-                anchorUnits: 'pixels',
-                anchorXOffset: '20',
-                anchorYOffset: '10'
-              }]
-            }
-          }]
+      // First, get an access token
+      const authResponse = await fetch(`${authServerUrl}/api/docusign/auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
         },
-        status: 'sent'
-      };
-
-      console.log('Sending envelope...', {
-        documentName,
-        signerEmail,
-        signerName,
-        documentSize: documentPath.length
+        body: JSON.stringify({
+          integrationKey: env.integrationKey,
+          userId: env.userId,
+          privateKey: env.privateKey
+        })
       });
-      // Get the current access token from the Authorization header
-      const accessToken = (this.client as any).defaultHeaders['Authorization']?.replace('Bearer ', '');
-      
-      if (!accessToken) {
-        throw new Error('No access token available. Please authenticate first.');
+
+      if (!authResponse.ok) {
+        const error = await authResponse.json();
+        throw new Error(error.message || 'Failed to authenticate');
       }
 
-      // Use our proxy endpoint instead of calling DocuSign directly
-      const response = await fetch(`${this.authServerUrl}/api/docusign/envelopes`, {
+      const { access_token } = await authResponse.json();
+
+      // Create envelope
+      const envelopeResponse = await fetch(`${authServerUrl}/api/docusign/envelopes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           accountId: env.accountId,
-          envelope,
-          accessToken
+          accessToken: access_token,
+          applicationId,
+          envelope: {
+            emailSubject: 'Please sign this document',
+            documents: [{
+              documentBase64: documentPath,
+              name: documentName,
+              fileExtension: 'pdf',
+              documentId: '1'
+            }],
+            recipients: {
+              signers: [{
+                email: signerEmail,
+                name: signerName,
+                recipientId: '1',
+                tabs: {
+                  signHereTabs: [{
+                    anchorString: '/sig1/',
+                    anchorUnits: 'pixels',
+                    anchorXOffset: '0',
+                    anchorYOffset: '0'
+                  }]
+                }
+              }]
+            },
+            status: 'sent'
+          }
         })
       });
 
-      const data = await response.json();
-      
-      if (!response.ok) {
-        console.error('Server error details:', data);
-        throw new Error(data.error || data.docusignError?.message || 'Failed to create envelope');
+      if (!envelopeResponse.ok) {
+        const error = await envelopeResponse.json();
+        throw new Error(error.message || 'Failed to create envelope');
       }
 
-      console.log('Envelope sent successfully:', data);
-      return {
-        envelopeId: data.envelopeId,
-        status: data.status
-      };
+      return await envelopeResponse.json();
     } catch (error) {
-      console.error('Error sending document for signature:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      throw new Error(`Failed to send document: ${errorMessage}`);
+      console.error('DocuSign error:', error);
+      throw error;
     }
   }
 }
