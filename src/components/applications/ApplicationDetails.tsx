@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication } from '../../services/applications';
+import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication, withdrawApplication } from '../../services/applications';
 import { docuSignService } from '../../services/docusign.ts';
 import type { Application } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download, Undo } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 
@@ -221,6 +221,20 @@ export function ApplicationDetails() {
     }
   };
 
+  const handleWithdraw = async () => {
+    if (!id || !application) return;
+
+    setUpdateLoading(true);
+    try {
+      const withdrawn = await withdrawApplication(id);
+      setApplication(withdrawn);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to withdraw application');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-4">
@@ -285,6 +299,16 @@ export function ApplicationDetails() {
                 Submit
               </button>
             </>
+          )}
+          {isOwner && application?.status === 'submitted' && (
+            <button
+              onClick={handleWithdraw}
+              disabled={updateLoading}
+              className="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <Undo className="h-4 w-4 mr-2" />
+              Withdraw
+            </button>
           )}
           {isAdmin && application?.status === 'submitted' && (
             <div className="flex gap-2">

@@ -187,3 +187,24 @@ export async function rejectApplication(id: string, feedback: string) {
 
   return application;
 }
+
+export async function withdrawApplication(id: string) {
+  const { data: application, error } = await supabase
+    .from('applications')
+    .update({ status: 'draft' })
+    .eq('id', id)
+    .eq('status', 'submitted') // Only allow withdrawing submitted applications
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('Error withdrawing application:', error);
+    throw new Error('Failed to withdraw application. Please try again.');
+  }
+
+  if (!application) {
+    throw new Error('Application not found or not in submitted state');
+  }
+
+  return application;
+}
