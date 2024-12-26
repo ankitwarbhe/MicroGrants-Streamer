@@ -9,16 +9,24 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "server.js"
+      "dest": "server.js",
+      "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept, Authorization, node-ver, x-docusign-sdk",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+        "Access-Control-Allow-Credentials": "true"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "dest": "server.js",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept, Authorization, node-ver, x-docusign-sdk",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+        "Access-Control-Allow-Credentials": "true"
+      }
     }
-  ],
-  "env": {
-    "VITE_SUPABASE_URL": "@vite_supabase_url",
-    "SUPABASE_SERVICE_KEY": "@supabase_service_key",
-    "VITE_DOCUSIGN_INTEGRATION_KEY": "@vite_docusign_integration_key",
-    "VITE_DOCUSIGN_USER_ID": "@vite_docusign_user_id",
-    "VITE_DOCUSIGN_ACCOUNT_ID": "@vite_docusign_account_id",
-    "VITE_DOCUSIGN_PRIVATE_KEY": "@vite_docusign_private_key",
-    "VITE_DOCUSIGN_AUTH_SERVER": "@vite_docusign_auth_server"
-  }
+  ]
 } 

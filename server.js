@@ -28,10 +28,23 @@ const app = express();
 
 // Enable CORS and JSON parsing
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'HEAD', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'node-ver', 'x-docusign-sdk']
+  origin: true, // Allow all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'node-ver', 'x-docusign-sdk', 'Origin', 'X-Requested-With', 'Accept'],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  preflightContinue: true
 }));
+
+// Handle preflight requests for all routes
+app.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, node-ver, x-docusign-sdk, Origin, X-Requested-With, Accept');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
 app.use(express.json({
   limit: '50mb'  // Increase payload size limit for base64 encoded documents
 }));
@@ -360,6 +373,28 @@ app.post('/api/generate-pdf', async (req, res) => {
 // Add a test endpoint to verify the server is running
 app.head('/api/docusign/auth', (req, res) => {
   res.sendStatus(200);
+});
+
+// Add a root route handler
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'ok',
+    message: 'MicroGrants API Server is running',
+    endpoints: {
+      auth: '/api/docusign/auth',
+      envelopes: '/api/docusign/envelopes',
+      connect: '/api/docusign/connect',
+      generatePdf: '/api/generate-pdf'
+    }
+  });
+});
+
+// Add a catch-all route for undefined routes
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: 'The requested endpoint does not exist'
+  });
 });
 
 // Export the Express API
