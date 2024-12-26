@@ -610,17 +610,45 @@ app.get('/', (req, res) => {
       auth: '/api/docusign/auth',
       envelopes: '/api/docusign/envelopes',
       connect: '/api/docusign/connect',
+      documents: '/api/docusign/documents',
       generatePdf: '/api/generate-pdf'
     }
   });
 });
 
-// Add a catch-all route for undefined routes
-app.use('*', (req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: 'The requested endpoint does not exist'
-  });
+// DocuSign get signed document endpoint
+app.post('/api/docusign/documents', async (req, res) => {
+  try {
+    const { accountId, accessToken, envelopeId } = req.body;
+    console.log('Getting signed document for envelope:', envelopeId);
+
+    // Get the document from DocuSign
+    const response = await fetch(`https://demo.docusign.net/restapi/v2.1/accounts/${accountId}/envelopes/${envelopeId}/documents/combined`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'User-Agent': 'docusign-node-client',
+        'X-DocuSign-SDK': 'Node'
+      }
+    });
+
+    if (!response.ok) {
+      console.error('DocuSign error:', await response.text());
+      throw new Error(`DocuSign error: ${response.statusText}`);
+    }
+
+    // Get the document as a buffer
+    const buffer = await response.buffer();
+    const documentBase64 = buffer.toString('base64');
+
+    res.json({ documentBase64 });
+  } catch (error) {
+    console.error('Document retrieval error:', error);
+    res.status(500).json({ 
+      error: error.message,
+      details: error.stack
+    });
+  }
 });
 
 // Add request logging middleware
@@ -662,39 +690,12 @@ app.get('/api/test', (req, res) => {
   });
 });
 
-// DocuSign get signed document endpoint
-app.post('/api/docusign/documents', async (req, res) => {
-  try {
-    const { accountId, accessToken, envelopeId } = req.body;
-    console.log('Getting signed document for envelope:', envelopeId);
-
-    // Get the document from DocuSign
-    const response = await fetch(`https://demo.docusign.net/restapi/v2.1/accounts/${accountId}/envelopes/${envelopeId}/documents/combined`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'User-Agent': 'docusign-node-client',
-        'X-DocuSign-SDK': 'Node'
-      }
-    });
-
-    if (!response.ok) {
-      console.error('DocuSign error:', await response.text());
-      throw new Error(`DocuSign error: ${response.statusText}`);
-    }
-
-    // Get the document as a buffer
-    const buffer = await response.buffer();
-    const documentBase64 = buffer.toString('base64');
-
-    res.json({ documentBase64 });
-  } catch (error) {
-    console.error('Document retrieval error:', error);
-    res.status(500).json({ 
-      error: error.message,
-      details: error.stack
-    });
-  }
+// Add a catch-all route for undefined routes
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: 'The requested endpoint does not exist'
+  });
 });
 
 // Export the Express API
