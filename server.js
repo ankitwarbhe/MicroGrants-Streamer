@@ -427,7 +427,7 @@ app.post('/api/generate-pdf', async (req, res) => {
     doc
       .fontSize(12)
       .font('Helvetica')
-      .text(`This Agreement ("Agreement") is entered into as of ${new Date().toLocaleDateString()} ("Effective Date") by and between Grant Microsystem by Ankit ("Grantor"), and ${applicantName} ("Recipient").`, { align: 'justify' })
+      .text(`This Agreement ("Agreement") is entered into as of ${new Date().toLocaleDateString()} ("Effective Date") by and between Grant Microsystem by Ankit ("Grantor"), and ("Recipient").`, { align: 'justify' })
       .moveDown(2);
 
     // Project Overview Section
@@ -566,17 +566,19 @@ app.post('/api/generate-pdf', async (req, res) => {
 
     // Recipient signature block
     doc
+      .font('Helvetica-Bold')
       .text('Recipient:')
       .moveDown()
       .text('Signature: ', { continued: true })
-      .text('/sn1/', { underline: true })
+      .text('________________________')
       .moveDown()
       .text('Date: ', { continued: true })
-      .text('/dt1/', { underline: true })
+      .text('________________________')
       .moveDown(2);
 
     // Grantor signature block
     doc
+      .font('Helvetica-Bold')
       .text('Grantor:')
       .moveDown()
       .text('Name: Grant Microsystem pvt ltd')
