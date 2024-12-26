@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/routes/ProtectedRoute';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { HomePage } from './pages/HomePage';
+import { AboutPage } from './pages/AboutPage';
 import { NewApplicationPage } from './pages/NewApplicationPage';
 import { ApplicationDetailsPage } from './pages/ApplicationDetailsPage';
 
@@ -14,6 +15,7 @@ export default function App() {
         <Header />
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route
             path="/dashboard"
