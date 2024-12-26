@@ -2,16 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication } from '../../services/applications';
 import type { Application } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 
 const STATUS_BADGES = {
   draft: { color: 'bg-gray-100 text-gray-800', icon: Clock },
   submitted: { color: 'bg-blue-100 text-blue-800', icon: FileText },
-  under_review: { color: 'bg-yellow-100 text-yellow-800', icon: AlertCircle },
   approved: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
   rejected: { color: 'bg-red-100 text-red-800', icon: XCircle },
+  pending_signature: { color: 'bg-purple-100 text-purple-800', icon: PenTool }
 };
 
 export function ApplicationDetails() {
@@ -155,7 +155,8 @@ export function ApplicationDetails() {
     );
   }
 
-  const StatusIcon = STATUS_BADGES[application.status].icon;
+  const statusBadge = STATUS_BADGES[application.status] || STATUS_BADGES.draft;
+  const StatusIcon = statusBadge.icon;
   const isDraft = application.status === 'draft';
 
   return (
@@ -208,7 +209,7 @@ export function ApplicationDetails() {
               </button>
             </div>
           )}
-          <div className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${STATUS_BADGES[application.status].color}`}>
+          <div className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${statusBadge.color}`}>
             <StatusIcon className="mr-2 h-5 w-5" />
             {application.status.replace('_', ' ').toUpperCase()}
           </div>

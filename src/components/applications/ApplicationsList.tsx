@@ -2,16 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getUserApplications } from '../../services/applications';
 import type { Application } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, ChevronLeft, ChevronLeftCircle, ChevronRightCircle } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, ChevronLeft, PenTool } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 
 const STATUS_BADGES = {
   draft: { color: 'bg-gray-100 text-gray-800', icon: Clock },
   submitted: { color: 'bg-blue-100 text-blue-800', icon: FileText },
-  under_review: { color: 'bg-yellow-100 text-yellow-800', icon: AlertCircle },
   approved: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
   rejected: { color: 'bg-red-100 text-red-800', icon: XCircle },
+  pending_signature: { color: 'bg-purple-100 text-purple-800', icon: PenTool }
 };
 
 const PAGE_SIZE = 5;
@@ -84,6 +84,7 @@ export function ApplicationsList() {
             <option value="submitted">Submitted</option>
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
+            <option value="pending_signature">Pending Signature</option>
           </select>
         </div>
       </div>
@@ -103,7 +104,8 @@ export function ApplicationsList() {
           <div className="overflow-hidden bg-white shadow sm:rounded-md">
             <ul className="divide-y divide-gray-200">
               {applications.map((application) => {
-                const StatusIcon = STATUS_BADGES[application.status].icon;
+                const statusBadge = STATUS_BADGES[application.status] || STATUS_BADGES.draft;
+                const StatusIcon = statusBadge.icon;
                 return (
                   <li key={application.id}>
                     <Link
@@ -118,7 +120,7 @@ export function ApplicationsList() {
                                 {application.title}
                               </p>
                               <div className="mt-1">
-                                <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGES[application.status].color}`}>
+                                <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadge.color}`}>
                                   <StatusIcon className="mr-1 h-4 w-4" />
                                   {application.status.replace('_', ' ').toUpperCase()}
                                 </div>

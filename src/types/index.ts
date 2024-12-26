@@ -12,7 +12,7 @@ export interface Application {
   title: string;
   description: string;
   amount_requested: number;
-  status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected';
+  status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'pending_signature';
   feedback?: string;
   created_at: string;
   updated_at: string;

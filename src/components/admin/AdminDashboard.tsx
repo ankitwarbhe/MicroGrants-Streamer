@@ -2,16 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import type { Application } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, DollarSign, ChevronLeft, ChevronRight, PenTool } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 
 const STATUS_BADGES = {
   draft: { color: 'bg-gray-100 text-gray-800', icon: Clock },
   submitted: { color: 'bg-blue-100 text-blue-800', icon: FileText },
-  under_review: { color: 'bg-yellow-100 text-yellow-800', icon: AlertCircle },
   approved: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
   rejected: { color: 'bg-red-100 text-red-800', icon: XCircle },
+  pending_signature: { color: 'bg-purple-100 text-purple-800', icon: PenTool }
 };
 
 export function AdminDashboard() {
@@ -235,6 +235,7 @@ export function AdminDashboard() {
             <option value="submitted">Submitted</option>
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
+            <option value="pending_signature">Pending Signature</option>
           </select>
         </div>
       </div>
@@ -275,7 +276,8 @@ export function AdminDashboard() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {applications.map((application) => {
-                  const StatusIcon = STATUS_BADGES[application.status].icon;
+                  const statusBadge = STATUS_BADGES[application.status] || STATUS_BADGES.draft;
+                  const StatusIcon = statusBadge.icon;
                   return (
                     <tr key={application.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -293,7 +295,7 @@ export function AdminDashboard() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGES[application.status].color}`}>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.color}`}>
                           <StatusIcon className="mr-1 h-4 w-4" />
                           {application.status.replace('_', ' ').toUpperCase()}
                         </span>
