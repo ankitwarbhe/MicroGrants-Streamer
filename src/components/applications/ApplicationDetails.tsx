@@ -31,6 +31,7 @@ export function ApplicationDetails() {
   const { user } = useAuth();
 
   const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
+  const isOwner = application?.user_id === user?.id;
 
   useEffect(() => {
     async function fetchApplication() {
@@ -246,7 +247,7 @@ export function ApplicationDetails() {
           Back
         </button>
         <div className="flex items-center gap-4">
-          {isDraft && !isEditing && (
+          {isDraft && !isEditing && isOwner && (
             <>
               <button
                 onClick={handleEdit}

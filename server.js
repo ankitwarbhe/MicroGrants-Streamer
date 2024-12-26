@@ -562,33 +562,26 @@ app.post('/api/generate-pdf', async (req, res) => {
       .font('Helvetica')
       .moveDown()
       .text('I, the undersigned Recipient, agree to the terms and conditions outlined in this Agreement and certify that the information provided is accurate to the best of my knowledge.')
-      .moveDown(2)
+      .moveDown(2);
+
+    // Recipient signature block
+    doc
       .text('Recipient:')
       .moveDown()
-      .text(`Name: ${applicantName}`)
+      .text('Signature: ', { continued: true })
+      .text('/sn1/', { underline: true })
       .moveDown()
-      .text('Signature: _______________________________')
-      .moveDown()
-      .text('Date: _______________________________')
-      .moveDown(2)
+      .text('Date: ', { continued: true })
+      .text('/dt1/', { underline: true })
+      .moveDown(2);
+
+    // Grantor signature block
+    doc
       .text('Grantor:')
       .moveDown()
-      .text('Name: Grant Microsystem by Ankit')
-      .moveDown()
-      .text('Signature: _______________________________')
-      .moveDown()
-      .text('Date: _______________________________');
+      .text('Name: Grant Microsystem pvt ltd')
+      .moveDown(2);
 
-    // Add DocuSign signing fields
-    doc
-      .moveDown(2)
-      .text('/sn1/ _________________________', { align: 'left' })
-      .moveDown()
-      .text('/dt1/ _________________________', { align: 'left' })
-      .moveDown(2)
-      .text('/sn2/ _________________________', { align: 'left' })
-      .moveDown()
-      .text('/dt2/ _________________________', { align: 'left' });
 
     // Finalize the PDF
     doc.end();
