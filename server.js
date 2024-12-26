@@ -199,140 +199,42 @@ app.post('/api/generate-pdf', async (req, res) => {
 
     // Add content to the PDF
     doc
-      .fontSize(16)
-      .text('Micro-Grants Program Agreement', { align: 'center' })
+      .fontSize(20)
+      .text('Grant Agreement', { align: 'center' })
       .moveDown(2);
 
     doc
-      .fontSize(10)
-      .text('This Agreement ("Agreement") is entered into as of the date of the last signature below ("Effective Date") by and between [Grant Microsystems by Ankit] ("Grantor"), and the applicant identified below ("Recipient").', { align: 'justify' })
-      .moveDown(2);
-
-    // Section 1
-    doc
       .fontSize(12)
-      .text('1. Purpose of the Grant', { underline: true })
-      .fontSize(10)
-      .text('The Grantor agrees to provide the Recipient with a micro-grant for the purpose of funding the project described in the application submitted by the Recipient. The grant is intended solely for the approved project and must align with the mission of the Grantor.')
+      .text('Application Details', { underline: true })
       .moveDown();
 
-    // Section 2
     doc
-      .fontSize(12)
-      .text('2. Grant Amount and Disbursement', { underline: true })
-      .fontSize(10)
-      .text(`Grantor shall provide the Recipient with a grant in the amount of $${amount.toLocaleString()}, subject to the terms and conditions of this Agreement. Funds will be disbursed to the Recipient upon:`)
-      .moveDown(0.5)
-      .text('• Approval of the application.')
-      .text('• Submission of any required banking or payment details.')
-      .moveDown();
-
-    // Section 3
-    doc
-      .fontSize(12)
-      .text('3. Use of Funds', { underline: true })
-      .fontSize(10)
-      .text('The Recipient agrees to use the grant funds exclusively for the purposes outlined in the approved application. Any deviation from the approved use must be pre-approved in writing by the Grantor.')
-      .moveDown();
-
-    // Section 4
-    doc
-      .fontSize(12)
-      .text('4. Reporting Requirements', { underline: true })
-      .fontSize(10)
-      .text('The Recipient shall provide the Grantor with:')
-      .moveDown(0.5)
-      .text('• A progress report within 6 months of receiving funds.')
-      .text('• A final report upon project completion, detailing outcomes, expenditures, and impact.')
-      .moveDown();
-
-    // Section 5
-    doc
-      .fontSize(12)
-      .text('5. Compliance with Laws', { underline: true })
-      .fontSize(10)
-      .text('The Recipient agrees to comply with all applicable laws, regulations, and guidelines in the implementation of the project.')
-      .moveDown();
-
-    // Section 6
-    doc
-      .fontSize(12)
-      .text('6. Termination of Agreement', { underline: true })
-      .fontSize(10)
-      .text('Grantor reserves the right to terminate this Agreement and demand a return of funds if:')
-      .moveDown(0.5)
-      .text('• The funds are used for purposes other than those approved.')
-      .text('• The Recipient provides false or misleading information.')
-      .text('• The project is abandoned or substantially altered without approval.')
-      .moveDown();
-
-    // Section 7
-    doc
-      .fontSize(12)
-      .text('7. Liability', { underline: true })
-      .fontSize(10)
-      .text('The Grantor is not responsible for any liabilities, damages, or losses incurred by the Recipient in connection with the project.')
-      .moveDown();
-
-    // Section 8
-    doc
-      .fontSize(12)
-      .text('8. Publicity and Acknowledgment', { underline: true })
-      .fontSize(10)
-      .text('The Recipient agrees to acknowledge the Grantor\'s support in all public communications about the project and grants the Grantor permission to use the project details for promotional purposes.')
-      .moveDown();
-
-    // Section 9
-    doc
-      .fontSize(12)
-      .text('9. Confidentiality', { underline: true })
-      .fontSize(10)
-      .text('Both parties agree to maintain the confidentiality of any non-public information exchanged as part of this Agreement.')
-      .moveDown();
-
-    // Section 10
-    doc
-      .fontSize(12)
-      .text('10. Governing Law', { underline: true })
-      .fontSize(10)
-      .text('This Agreement shall be governed by the laws of the India.')
-      .moveDown();
-
-    // Section 11
-    doc
-      .fontSize(12)
-      .text('11. Entire Agreement', { underline: true })
-      .fontSize(10)
-      .text('This Agreement constitutes the entire understanding between the parties and supersedes all prior agreements, whether written or oral.')
-      .moveDown(2);
-
-    // Recipient Information
-    doc
-      .fontSize(12)
-      .text('Project Information', { underline: true })
-      .moveDown();
-    
-    doc
-      .fontSize(10)
-      .text(`Project Title: ${title}`)
+      .text(`Title: ${title}`)
       .moveDown()
-      .text(`Grant Amount: $${amount.toLocaleString()}`)
-      .moveDown(2);
-
-    // Acknowledgment
-    doc
-      .fontSize(12)
-      .text('Acknowledgment', { underline: true })
-      .moveDown();
-    
-    doc
-      .fontSize(10)
-      .text('I, the undersigned Recipient, agree to the terms and conditions outlined in this Agreement and certify that the information provided is accurate to the best of my knowledge.')
-      .moveDown(2);
-
-    doc
-      .text('Signature: /sig1/')
+      .text(`Description: ${description}`)
       .moveDown()
+      .text(`Amount Requested: $${amount.toLocaleString()}`)
+      .moveDown()
+      .text(`Submission Date: ${submissionDate}`)
+      .moveDown(2);
+
+    doc
+      .text('Terms and Conditions', { underline: true })
+      .moveDown()
+      .text('By signing this document, you agree to:')
+      .moveDown()
+      .text('1. Use the grant funds solely for the purpose described in the application')
+      .text('2. Provide progress reports as requested')
+      .text('3. Return any unused funds')
+      .text('4. Acknowledge the grantor in any public communications about the funded project')
+      .moveDown(2);
+
+    doc
+      .text('Signature', { underline: true })
+      .moveDown()
+      .text('/sig1/', { align: 'center' })
+      .moveDown()
+      .text('Date: ' + new Date().toLocaleDateString(), { align: 'center' });
 
     // Finalize the PDF
     doc.end();
