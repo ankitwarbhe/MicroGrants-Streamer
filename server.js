@@ -469,5 +469,44 @@ app.use('*', (req, res) => {
   });
 });
 
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log('Headers:', req.headers);
+  if (req.body) {
+    console.log('Body:', JSON.stringify(req.body, null, 2));
+  }
+  next();
+});
+
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Global error handler caught:', err);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err.message,
+    path: req.path,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Add OPTIONS handler for CORS
+app.options('*', (req, res) => {
+  console.log('Handling OPTIONS request for:', req.url);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-DocuSign-Signature-1');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  res.status(200).end();
+});
+
+// Add a test endpoint
+app.get('/api/test', (req, res) => {
+  res.json({
+    message: 'Test endpoint working',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Export the Express API
 export default app; 
