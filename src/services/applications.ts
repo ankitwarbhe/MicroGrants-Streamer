@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 import type { Application } from '../types';
 
-type ApplicationInput = Omit<Application, 'id' | 'user_id' | 'status' | 'created_at' | 'updated_at' | 'user_email'>;
+type ApplicationInput = Omit<Application, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'user_email'>;
 
 export async function createApplication(data: ApplicationInput) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();

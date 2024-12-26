@@ -134,6 +134,19 @@ export function ApplicationDetails() {
     }
   };
 
+  const handleSendForSignature = async () => {
+    if (!id) return;
+    setUpdateLoading(true);
+    try {
+      const updated = await updateApplication(id, { status: 'pending_signature' });
+      setApplication(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send for signature');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
   const openFeedbackModal = (type: 'approve' | 'reject') => {
     setActionType(type);
     setShowFeedbackModal(true);
@@ -208,6 +221,16 @@ export function ApplicationDetails() {
                 Reject
               </button>
             </div>
+          )}
+          {isAdmin && application?.status === 'approved' && (
+            <button
+              onClick={handleSendForSignature}
+              disabled={updateLoading}
+              className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+            >
+              <PenTool className="h-4 w-4 mr-2" />
+              Send for Signature
+            </button>
           )}
           <div className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${statusBadge.color}`}>
             <StatusIcon className="mr-2 h-5 w-5" />
