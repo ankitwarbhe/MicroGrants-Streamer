@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getUserApplications } from '../../services/applications';
 import type { Application } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, ChevronLeft, PenTool } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ChevronRight, ChevronLeft, PenTool, FileSignature } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 
@@ -11,7 +11,8 @@ const STATUS_BADGES = {
   submitted: { color: 'bg-blue-100 text-blue-800', icon: FileText },
   approved: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
   rejected: { color: 'bg-red-100 text-red-800', icon: XCircle },
-  pending_signature: { color: 'bg-purple-100 text-purple-800', icon: PenTool }
+  pending_signature: { color: 'bg-purple-100 text-purple-800', icon: PenTool },
+  signed: { color: 'bg-emerald-100 text-emerald-800', icon: FileSignature }
 };
 
 const PAGE_SIZE = 5;
@@ -85,6 +86,7 @@ export function ApplicationsList() {
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
             <option value="pending_signature">Pending Signature</option>
+            <option value="signed">Signed</option>
           </select>
         </div>
       </div>

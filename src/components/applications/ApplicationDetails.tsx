@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication } from '../../services/applications';
 import type { Application } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 
@@ -11,7 +11,8 @@ const STATUS_BADGES = {
   submitted: { color: 'bg-blue-100 text-blue-800', icon: FileText },
   approved: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
   rejected: { color: 'bg-red-100 text-red-800', icon: XCircle },
-  pending_signature: { color: 'bg-purple-100 text-purple-800', icon: PenTool }
+  pending_signature: { color: 'bg-purple-100 text-purple-800', icon: PenTool },
+  signed: { color: 'bg-emerald-100 text-emerald-800', icon: FileSignature }
 };
 
 export function ApplicationDetails() {
@@ -147,6 +148,19 @@ export function ApplicationDetails() {
     }
   };
 
+  const handleMarkAsSigned = async () => {
+    if (!id) return;
+    setUpdateLoading(true);
+    try {
+      const updated = await updateApplication(id, { status: 'signed' });
+      setApplication(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to mark as signed');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
   const openFeedbackModal = (type: 'approve' | 'reject') => {
     setActionType(type);
     setShowFeedbackModal(true);
@@ -230,6 +244,16 @@ export function ApplicationDetails() {
             >
               <PenTool className="h-4 w-4 mr-2" />
               Send for Signature
+            </button>
+          )}
+          {isAdmin && application?.status === 'pending_signature' && (
+            <button
+              onClick={handleMarkAsSigned}
+              disabled={updateLoading}
+              className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50"
+            >
+              <FileSignature className="h-4 w-4 mr-2" />
+              Mark as Signed
             </button>
           )}
           <div className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${statusBadge.color}`}>
