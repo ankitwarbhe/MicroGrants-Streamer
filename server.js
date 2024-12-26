@@ -261,8 +261,13 @@ app.post('/api/docusign/connect', async (req, res) => {
     console.log('\n=== Webhook Data Validation ===');
     console.log('Has Body:', !!data);
     console.log('Body Type:', typeof data);
-    console.log('EnvelopeId:', data?.envelopeId);
-    console.log('Status:', data?.status);
+    
+    // Extract envelopeId from the correct location in the payload
+    const envelopeId = data?.data?.envelopeId || data?.envelopeId;
+    const event = data?.event;
+    
+    console.log('Event Type:', event);
+    console.log('EnvelopeId:', envelopeId);
     
     // Basic validation
     if (!data) {
@@ -274,7 +279,7 @@ app.post('/api/docusign/connect', async (req, res) => {
       });
     }
 
-    if (!data.envelopeId) {
+    if (!envelopeId) {
       console.error('Error: Missing envelopeId in payload:', data);
       return res.status(400).json({
         error: 'Invalid payload',
@@ -285,18 +290,18 @@ app.post('/api/docusign/connect', async (req, res) => {
     }
 
     console.log('\n=== Processing Envelope Status ===');
-    console.log('Envelope ID:', data.envelopeId);
-    console.log('Current Status:', data.status);
+    console.log('Envelope ID:', envelopeId);
+    console.log('Event:', event);
 
     // Process completed envelopes
-    if (data.status === 'completed') {
+    if (event === 'envelope-completed') {
       console.log('\n=== Querying Supabase ===');
       
       // Query Supabase for the application
       const { data: applications, error: queryError } = await supabase
         .from('applications')
         .select('id, status, envelope_id')
-        .eq('envelope_id', data.envelopeId)
+        .eq('envelope_id', envelopeId)
         .single();
 
       // Log Supabase query results
@@ -313,10 +318,10 @@ app.post('/api/docusign/connect', async (req, res) => {
       }
 
       if (!applications) {
-        console.warn('No matching application found for envelope:', data.envelopeId);
+        console.warn('No matching application found for envelope:', envelopeId);
         return res.status(404).json({
           warning: 'Application not found',
-          envelopeId: data.envelopeId,
+          envelopeId: envelopeId,
           timestamp: new Date().toISOString()
         });
       }
@@ -343,19 +348,19 @@ app.post('/api/docusign/connect', async (req, res) => {
       
       return res.status(200).json({
         message: 'Webhook processed successfully',
-        envelopeId: data.envelopeId,
+        envelopeId: envelopeId,
         applicationId: applications.id,
         newStatus: 'signed',
         timestamp: new Date().toISOString()
       });
     }
 
-    // Handle non-completed status
-    console.log('Envelope not completed, no action needed');
+    // Handle non-completed events
+    console.log('Event not completed, no action needed');
     return res.status(200).json({
       message: 'Webhook received, no action needed',
-      envelopeId: data.envelopeId,
-      status: data.status,
+      envelopeId: envelopeId,
+      event: event,
       timestamp: new Date().toISOString()
     });
 

@@ -8,9 +8,17 @@ const testWebhook = async () => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        envelopeId: '36af9994-fb53-46f6-b89d-76f9baa1fb91',
-        status: 'completed',
-        emailSubject: 'Test Document'
+        event: 'envelope-completed',
+        apiVersion: 'v2.1',
+        uri: '/restapi/v2.1/accounts/test-account/envelopes/test-envelope',
+        retryCount: 0,
+        configurationId: 12345,
+        generatedDateTime: new Date().toISOString(),
+        data: {
+          accountId: 'test-account',
+          userId: 'test-user',
+          envelopeId: 'b823ec9f-fe53-4107-a3a3-1832bf2d88af'
+        }
       })
     });
 
