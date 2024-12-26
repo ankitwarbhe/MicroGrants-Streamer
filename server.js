@@ -66,12 +66,23 @@ function formatPrivateKey(key) {
     const chunks = cleanKey.match(/.{1,64}/g) || [];
     
     // Build the formatted key with proper PEM format
-    return [
-      '-----BEGIN PRIVATE KEY-----',
+    const formattedKey = [
+      '-----BEGIN RSA PRIVATE KEY-----',
       ...chunks,
-      '-----END PRIVATE KEY-----'
-    ].join('\n');
+      '-----END RSA PRIVATE KEY-----'
+    ].join('\n') + '\n';
 
+    // Log key details for debugging
+    console.log('Private key details:', {
+      totalLength: formattedKey.length,
+      chunkCount: chunks.length,
+      hasCorrectHeader: formattedKey.includes('-----BEGIN RSA PRIVATE KEY-----'),
+      hasCorrectFooter: formattedKey.includes('-----END RSA PRIVATE KEY-----'),
+      firstChunk: chunks[0]?.substring(0, 32) + '...',
+      lastChunk: chunks[chunks.length - 1]?.substring(0, 32) + '...'
+    });
+
+    return formattedKey;
   } catch (error) {
     console.error('Error formatting private key:', error);
     throw new Error(`Failed to format private key: ${error.message}`);
@@ -99,17 +110,13 @@ app.post('/api/docusign/auth', async (req, res) => {
 
     // Format and log the private key for debugging
     const formattedKey = formatPrivateKey(privateKey);
-    console.log('Key format:', {
-      hasHeader: formattedKey.includes('-----BEGIN PRIVATE KEY-----'),
-      hasFooter: formattedKey.includes('-----END PRIVATE KEY-----'),
-      length: formattedKey.length,
-      lines: formattedKey.split('\n').length
-    });
 
     // Sign the JWT token
     const assertion = jwt.sign(payload, formattedKey, { 
       algorithm: 'RS256'
     });
+
+    console.log('JWT assertion created successfully');
 
     // Get access token from DocuSign
     const response = await fetch('https://account-d.docusign.com/oauth/token', {
@@ -126,9 +133,11 @@ app.post('/api/docusign/auth', async (req, res) => {
     const data = await response.json();
     
     if (!response.ok) {
+      console.error('DocuSign authentication failed:', data);
       throw new Error(`DocuSign error: ${data.error || 'Unknown error'}`);
     }
 
+    console.log('DocuSign authentication successful');
     res.json(data);
   } catch (error) {
     console.error('Authentication error:', error);
