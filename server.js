@@ -4,7 +4,6 @@ import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { createServer } from 'http';
 import PDFDocument from 'pdfkit';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
@@ -409,4 +408,7 @@ startServer(3001).then(port => {
 }).catch(error => {
   console.error('Failed to start server:', error);
   process.exit(1);
-}); 
+});
+
+// Export the Express API
+export default app; 

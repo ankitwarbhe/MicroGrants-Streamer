@@ -104,8 +104,11 @@ export class DocuSignService {
       return this.authServerUrl;
     }
 
-    // Try to find the auth server
-    this.authServerUrl = `http://localhost:3001`;
+    // Use Vercel URL in production, localhost in development
+    this.authServerUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://your-app.vercel.app'  // Replace with your Vercel URL
+      : 'http://localhost:3001';
+    
     return this.authServerUrl;
   }
 
