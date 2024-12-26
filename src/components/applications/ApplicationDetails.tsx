@@ -209,8 +209,23 @@ export function ApplicationDetails() {
 
   if (error || !application) {
     return (
-      <div className="bg-red-50 text-red-700 p-4 rounded-md">
-        {error || 'Application not found'}
+      <div className="flex flex-col items-center justify-center py-12">
+        <div className="bg-red-50 text-red-700 p-4 rounded-md max-w-md w-full text-center">
+          <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
+          <h3 className="text-lg font-medium mb-2">Access Denied</h3>
+          <p className="text-sm">
+            {error?.includes('Access denied') 
+              ? 'You do not have permission to view this application.'
+              : error || 'Application not found'}
+          </p>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Return to Dashboard
+          </button>
+        </div>
       </div>
     );
   }

@@ -67,6 +67,15 @@ export async function getUserApplications(
 }
 
 export async function getApplicationById(id: string) {
+  // First get the current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('You must be logged in to view applications');
+  }
+
+  const isAdmin = user.user_metadata?.role === 'admin' || user.app_metadata?.role === 'admin';
+
+  // Get the application
   const { data: application, error } = await supabase
     .from('applications')
     .select('*')
@@ -80,6 +89,11 @@ export async function getApplicationById(id: string) {
 
   if (!application) {
     throw new Error('Application not found');
+  }
+
+  // Check if user has permission to view this application
+  if (!isAdmin && application.user_id !== user.id) {
+    throw new Error('Access denied: You do not have permission to view this application');
   }
 
   return application;
