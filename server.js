@@ -7,12 +7,33 @@ import { dirname } from 'path';
 import PDFDocument from 'pdfkit';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 
 // Load environment variables
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Get private key from environment variable or file
+let privateKey;
+try {
+  // First try to get from environment variable
+  privateKey = process.env.DOCUSIGN_PRIVATE_KEY;
+  
+  // If not in env, try to read from file
+  if (!privateKey) {
+    const privateKeyPath = path.join(__dirname, 'private.pem');
+    privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+    console.log('Private key loaded from file system');
+  } else {
+    console.log('Private key loaded from environment variable');
+  }
+} catch (error) {
+  console.error('Error loading private key:', error);
+  privateKey = null;
+}
 
 // Initialize Supabase client
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -52,34 +73,30 @@ app.use(express.json({
 // Helper function to format private key
 function formatPrivateKey(key) {
   try {
-    if (!key) {
+    // If no key provided, use the environment/file-based private key
+    const keyToUse = key || privateKey;
+    
+    if (!keyToUse) {
       throw new Error('Private key is empty or undefined');
     }
 
-    // Remove any existing headers, footers, and whitespace
-    let cleanKey = key.replace(/-----BEGIN.*KEY-----/, '')
-                     .replace(/-----END.*KEY-----/, '')
-                     .replace(/[\r\n\s]/g, '');
+    // Clean up the key if it's from environment variable
+    // This handles cases where the key might have been minified
+    const cleanKey = keyToUse
+      .replace(/\\n/g, '\n')  // Replace literal \n with newlines
+      .trim();
 
-    // Split into 64-character chunks and join with newlines
-    const chunks = cleanKey.match(/.{1,64}/g) || [];
-    
-    // Build the formatted key with proper PEM format
-    return [
-      '-----BEGIN PRIVATE KEY-----',
-      ...chunks,
-      '-----END PRIVATE KEY-----'
-    ].join('\n');
+    return cleanKey;
   } catch (error) {
     console.error('Error formatting private key:', error);
-    throw error;
+    throw new Error(`Failed to format private key: ${error.message}`);
   }
 }
 
 // DocuSign authentication endpoint
 app.post('/api/docusign/auth', async (req, res) => {
   try {
-    const { integrationKey = docusignIntegrationKey, userId = docusignUserId, privateKey = docusignPrivateKey } = req.body;
+    const { integrationKey = process.env.DOCUSIGN_INTEGRATION_KEY, userId = process.env.DOCUSIGN_USER_ID } = req.body;
     
     if (!integrationKey || !userId || !privateKey) {
       throw new Error('Missing required DocuSign credentials');
@@ -95,11 +112,8 @@ app.post('/api/docusign/auth', async (req, res) => {
       scope: 'signature impersonation'
     };
 
-    // Format and log the private key for debugging
-    const formattedKey = formatPrivateKey(privateKey);
-
-    // Sign the JWT token
-    const assertion = jwt.sign(payload, formattedKey, { 
+    // Sign the JWT token using the PEM file
+    const assertion = jwt.sign(payload, privateKey, { 
       algorithm: 'RS256'
     });
 

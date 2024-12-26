@@ -1,18 +1,13 @@
 [build]
-  command = "npm install && npm run build"
-  publish = "dist"
-  base = "."
-
-[build.environment]
-  NODE_VERSION = "18"
-  NPM_FLAGS = "--legacy-peer-deps"
+  command = "npm install"
+  functions = "functions"
+  publish = "public"
 
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
   status = 200
 
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*" 
+[functions]
+  external_node_modules = ["express"]
+  node_bundler = "esbuild" 
