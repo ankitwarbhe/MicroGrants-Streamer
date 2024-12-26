@@ -57,35 +57,22 @@ function formatPrivateKey(key) {
     }
 
     // Remove any existing headers, footers, and whitespace
-    let cleanKey = key
-      .replace(/-----BEGIN.*KEY-----/, '')
-      .replace(/-----END.*KEY-----/, '')
-      .replace(/[\r\n\s]/g, '');
+    let cleanKey = key.replace(/-----BEGIN.*KEY-----/, '')
+                     .replace(/-----END.*KEY-----/, '')
+                     .replace(/[\r\n\s]/g, '');
 
-    // Split into 64-character chunks
+    // Split into 64-character chunks and join with newlines
     const chunks = cleanKey.match(/.{1,64}/g) || [];
     
     // Build the formatted key with proper PEM format
-    const formattedKey = [
-      '-----BEGIN RSA PRIVATE KEY-----',
+    return [
+      '-----BEGIN PRIVATE KEY-----',
       ...chunks,
-      '-----END RSA PRIVATE KEY-----'
-    ].join('\n') + '\n';
-
-    // Log key details for debugging
-    console.log('Private key details:', {
-      totalLength: formattedKey.length,
-      chunkCount: chunks.length,
-      hasCorrectHeader: formattedKey.includes('-----BEGIN RSA PRIVATE KEY-----'),
-      hasCorrectFooter: formattedKey.includes('-----END RSA PRIVATE KEY-----'),
-      firstChunk: chunks[0]?.substring(0, 32) + '...',
-      lastChunk: chunks[chunks.length - 1]?.substring(0, 32) + '...'
-    });
-
-    return formattedKey;
+      '-----END PRIVATE KEY-----'
+    ].join('\n');
   } catch (error) {
     console.error('Error formatting private key:', error);
-    throw new Error(`Failed to format private key: ${error.message}`);
+    throw error;
   }
 }
 
