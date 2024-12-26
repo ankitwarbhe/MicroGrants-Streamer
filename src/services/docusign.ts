@@ -113,6 +113,15 @@ export class DocuSignService {
     this.envelopesApi = new EnvelopesApi(this.client);
   }
 
+  async getAuthServerUrl(): Promise<string> {
+    if (!this.authServerUrl) {
+      // Find the authentication server
+      this.authServerUrl = await findAuthServer();
+      console.log('Found authentication server at:', this.authServerUrl);
+    }
+    return this.authServerUrl;
+  }
+
   private async authenticate() {
     console.log('Starting authentication...');
     const { privateKey, integrationKey, userId } = env;

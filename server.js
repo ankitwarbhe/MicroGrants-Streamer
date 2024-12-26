@@ -5,6 +5,7 @@ import fetch from 'node-fetch';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { createServer } from 'http';
+import PDFDocument from 'pdfkit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -175,6 +176,73 @@ app.post('/api/docusign/envelopes', async (req, res) => {
       error: error.message,
       details: error.stack,
       docusignError: error.response?.data
+    });
+  }
+});
+
+// PDF Generation endpoint
+app.post('/api/generate-pdf', async (req, res) => {
+  try {
+    const { title, description, amount, submissionDate } = req.body;
+    
+    // Create a new PDF document
+    const doc = new PDFDocument();
+    const chunks = [];
+
+    // Collect PDF data chunks
+    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('end', () => {
+      const pdfBuffer = Buffer.concat(chunks);
+      const base64String = pdfBuffer.toString('base64');
+      res.json({ pdfBase64: base64String });
+    });
+
+    // Add content to the PDF
+    doc
+      .fontSize(20)
+      .text('Grant Agreement', { align: 'center' })
+      .moveDown(2);
+
+    doc
+      .fontSize(12)
+      .text('Application Details', { underline: true })
+      .moveDown();
+
+    doc
+      .text(`Title: ${title}`)
+      .moveDown()
+      .text(`Description: ${description}`)
+      .moveDown()
+      .text(`Amount Requested: $${amount.toLocaleString()}`)
+      .moveDown()
+      .text(`Submission Date: ${submissionDate}`)
+      .moveDown(2);
+
+    doc
+      .text('Terms and Conditions', { underline: true })
+      .moveDown()
+      .text('By signing this document, you agree to:')
+      .moveDown()
+      .text('1. Use the grant funds solely for the purpose described in the application')
+      .text('2. Provide progress reports as requested')
+      .text('3. Return any unused funds')
+      .text('4. Acknowledge the grantor in any public communications about the funded project')
+      .moveDown(2);
+
+    doc
+      .text('Signature', { underline: true })
+      .moveDown()
+      .text('/sig1/', { align: 'center' })
+      .moveDown()
+      .text('Date: ' + new Date().toLocaleDateString(), { align: 'center' });
+
+    // Finalize the PDF
+    doc.end();
+  } catch (error) {
+    console.error('PDF Generation error:', error);
+    res.status(500).json({ 
+      error: error.message,
+      details: error.stack
     });
   }
 });

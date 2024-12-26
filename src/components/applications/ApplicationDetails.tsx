@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication } from '../../services/applications';
+import { docuSignService } from '../../services/docusign.ts';
 import type { Application } from '../../types';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -136,9 +137,41 @@ export function ApplicationDetails() {
   };
 
   const handleSendForSignature = async () => {
-    if (!id) return;
+    if (!id || !application) return;
     setUpdateLoading(true);
     try {
+      // Get the auth server URL
+      const authServerUrl = await docuSignService.getAuthServerUrl();
+
+      // Generate PDF document using server endpoint
+      const pdfResponse = await fetch(`${authServerUrl}/api/generate-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: application.title,
+          description: application.description,
+          amount: application.amount_requested,
+          submissionDate: new Date(application.created_at).toLocaleDateString()
+        })
+      });
+
+      const { pdfBase64 } = await pdfResponse.json();
+
+      if (!pdfBase64) {
+        throw new Error('Failed to generate PDF document');
+      }
+
+      // Send for signature using DocuSign
+      await docuSignService.sendDocumentForSignature({
+        documentPath: pdfBase64,
+        signerEmail: application.user_email || '',
+        signerName: application.user_email?.split('@')[0] || 'Applicant',
+        documentName: `${application.title} - Grant Agreement.pdf`
+      });
+
+      // Update application status
       const updated = await updateApplication(id, { status: 'pending_signature' });
       setApplication(updated);
     } catch (err) {
