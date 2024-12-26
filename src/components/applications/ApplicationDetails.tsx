@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication } from '../../services/applications';
 import { docuSignService } from '../../services/docusign.ts';
 import type { Application } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 
@@ -29,6 +29,9 @@ export function ApplicationDetails() {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
   const { user } = useAuth();
+  const [signedDocument, setSignedDocument] = useState<string | null>(null);
+  const [loadingDocument, setLoadingDocument] = useState(false);
+  const [documentError, setDocumentError] = useState<string | null>(null);
 
   const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
   const isOwner = application?.user_id === user?.id;
@@ -186,6 +189,36 @@ export function ApplicationDetails() {
   const openFeedbackModal = (type: 'approve' | 'reject') => {
     setActionType(type);
     setShowFeedbackModal(true);
+  };
+
+  const handleDownloadSignedDocument = async () => {
+    if (!application?.envelope_id) return;
+    
+    setLoadingDocument(true);
+    setDocumentError(null);
+    
+    try {
+      const documentBase64 = await docuSignService.getSignedDocument(application.envelope_id);
+      
+      // Create a blob from the base64 string
+      const blob = new Blob([Buffer.from(documentBase64, 'base64')], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a link and click it to trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${application.title}-signed.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      setSignedDocument(documentBase64);
+    } catch (error) {
+      setDocumentError(error instanceof Error ? error.message : 'Failed to download signed document');
+    } finally {
+      setLoadingDocument(false);
+    }
   };
 
   if (loading) {
@@ -450,6 +483,28 @@ export function ApplicationDetails() {
                     <dt className="text-sm font-medium text-gray-500">Feedback</dt>
                     <dd className="mt-1 text-sm text-gray-900 bg-gray-50 rounded-md p-4">
                       {application.feedback}
+                    </dd>
+                  </div>
+                )}
+
+                {application.status === 'signed' && application.envelope_id && (
+                  <div className="sm:col-span-2">
+                    <dt className="text-sm font-medium text-gray-500 flex items-center">
+                      <FileSignature className="h-4 w-4 mr-1" />
+                      Signed Document
+                    </dt>
+                    <dd className="mt-1">
+                      <button
+                        onClick={handleDownloadSignedDocument}
+                        disabled={loadingDocument}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        {loadingDocument ? 'Downloading...' : 'Download Signed Document'}
+                      </button>
+                      {documentError && (
+                        <p className="mt-2 text-sm text-red-600">{documentError}</p>
+                      )}
                     </dd>
                   </div>
                 )}

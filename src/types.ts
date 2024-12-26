@@ -4,7 +4,6 @@ export type ApplicationStatus =
   | 'approved'
   | 'rejected'
   | 'pending_signature'
-  | 'waiting_for_esign'
   | 'signed';
 
 export interface Application {
