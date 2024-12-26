@@ -249,18 +249,33 @@ app.post('/api/docusign/envelopes', async (req, res) => {
 // DocuSign Connect webhook endpoint
 app.post('/api/docusign/connect', async (req, res) => {
   try {
-    const data = req.body;
     console.log('Received DocuSign Connect webhook:', {
-      envelopeId: data.envelopeId,
-      status: data.status
+      body: req.body,
+      headers: req.headers,
+      url: req.url
     });
 
-    // Verify the webhook is from DocuSign using HMAC validation
-    // You should set up HMAC validation in DocuSign Connect settings
-    // and verify the signature here
+    const data = req.body;
+    
+    // Validate webhook payload
+    if (!data || !data.envelopeId) {
+      console.error('Invalid webhook payload:', data);
+      return res.status(400).json({
+        error: 'Invalid webhook payload',
+        message: 'Missing required fields'
+      });
+    }
+
+    console.log('Processing webhook for envelope:', {
+      envelopeId: data.envelopeId,
+      status: data.status,
+      emailSubject: data.emailSubject
+    });
 
     // Check if this is a completed envelope
     if (data.status === 'completed') {
+      console.log('Envelope completed, updating application status');
+      
       const { data: applications, error: queryError } = await supabase
         .from('applications')
         .select('id, status')
@@ -273,6 +288,8 @@ app.post('/api/docusign/connect', async (req, res) => {
       }
 
       if (applications) {
+        console.log('Found application:', applications);
+        
         const { error: updateError } = await supabase
           .from('applications')
           .update({ status: 'signed' })
@@ -284,15 +301,29 @@ app.post('/api/docusign/connect', async (req, res) => {
         }
 
         console.log(`Updated application ${applications.id} status to signed`);
+      } else {
+        console.warn('No application found for envelope:', data.envelopeId);
       }
+    } else {
+      console.log('Envelope status not completed:', data.status);
     }
 
-    res.status(200).json({ message: 'Webhook processed successfully' });
+    res.status(200).json({ 
+      message: 'Webhook processed successfully',
+      envelopeId: data.envelopeId,
+      status: data.status
+    });
   } catch (error) {
-    console.error('Error processing DocuSign webhook:', error);
+    console.error('Error processing DocuSign webhook:', {
+      error: error.message,
+      stack: error.stack,
+      body: req.body
+    });
+    
     res.status(500).json({ 
       error: 'Failed to process webhook',
-      details: error.message 
+      details: error.message,
+      timestamp: new Date().toISOString()
     });
   }
 });
