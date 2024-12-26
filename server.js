@@ -362,53 +362,5 @@ app.head('/api/docusign/auth', (req, res) => {
   res.sendStatus(200);
 });
 
-// Function to try different ports
-async function startServer(initialPort) {
-  let port = initialPort;
-  const maxAttempts = 10;
-  
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      const server = createServer(app);
-      
-      await new Promise((resolve, reject) => {
-        server.on('error', (error) => {
-          if (error.code === 'EADDRINUSE') {
-            console.log(`Port ${port} is in use, trying ${port + 1}...`);
-            server.close();
-            port++;
-          } else {
-            reject(error);
-          }
-        });
-
-        server.listen(port, () => {
-          console.log(`Server running on port ${port}`);
-          console.log(`DocuSign auth endpoint: http://localhost:${port}/api/docusign/auth`);
-          resolve(server);
-        });
-      });
-
-      // If we get here, the server started successfully
-      return port;
-    } catch (error) {
-      if (attempt === maxAttempts - 1) {
-        throw new Error(`Could not find an available port after ${maxAttempts} attempts`);
-      }
-      // Continue to next attempt
-      port++;
-    }
-  }
-}
-
-// Start the server
-startServer(3001).then(port => {
-  // Update the DocuSign service with the correct port
-  console.log(`Server is ready on port ${port}`);
-}).catch(error => {
-  console.error('Failed to start server:', error);
-  process.exit(1);
-});
-
 // Export the Express API
 export default app; 
