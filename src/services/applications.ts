@@ -39,39 +39,21 @@ export async function getUserApplications(
   pageSize: number = 5,
   status?: Application['status'] | 'all'
 ): Promise<PaginatedResponse<Application>> {
-  // Build the base query
+  // Build a single query that gets both data and count
   let query = supabase
     .from('applications')
-    .select('*', { count: 'exact' });
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false });
 
   // Add status filter if specified and not 'all'
   if (status && status !== 'all') {
     query = query.eq('status', status);
   }
 
-  // Get the total count
-  const { count, error: countError } = await query;
-
-  if (countError) {
-    console.error('Error getting applications count:', countError);
-    throw new Error('Failed to fetch applications count. Please try again.');
-  }
-
-  // Build the data query
-  let dataQuery = supabase
-    .from('applications')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  // Add status filter if specified and not 'all'
-  if (status && status !== 'all') {
-    dataQuery = dataQuery.eq('status', status);
-  }
-
   // Add pagination
-  dataQuery = dataQuery.range((page - 1) * pageSize, page * pageSize - 1);
+  query = query.range((page - 1) * pageSize, page * pageSize - 1);
 
-  const { data: applications, error } = await dataQuery;
+  const { data: applications, count, error } = await query;
 
   if (error) {
     console.error('Error fetching applications:', error);
