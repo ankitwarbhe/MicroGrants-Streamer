@@ -249,80 +249,127 @@ app.post('/api/docusign/envelopes', async (req, res) => {
 // DocuSign Connect webhook endpoint
 app.post('/api/docusign/connect', async (req, res) => {
   try {
-    console.log('Received DocuSign Connect webhook:', {
-      body: req.body,
-      headers: req.headers,
-      url: req.url
-    });
+    // Log raw request details
+    console.log('=== DocuSign Connect Webhook Received ===');
+    console.log('Request URL:', req.url);
+    console.log('Request Method:', req.method);
+    console.log('Request Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('Request Body:', JSON.stringify(req.body, null, 2));
 
+    // Parse and validate the data
     const data = req.body;
+    console.log('\n=== Webhook Data Validation ===');
+    console.log('Has Body:', !!data);
+    console.log('Body Type:', typeof data);
+    console.log('EnvelopeId:', data?.envelopeId);
+    console.log('Status:', data?.status);
     
-    // Validate webhook payload
-    if (!data || !data.envelopeId) {
-      console.error('Invalid webhook payload:', data);
+    // Basic validation
+    if (!data) {
+      console.error('Error: Empty request body');
       return res.status(400).json({
-        error: 'Invalid webhook payload',
-        message: 'Missing required fields'
+        error: 'Invalid request',
+        message: 'Request body is empty',
+        timestamp: new Date().toISOString()
       });
     }
 
-    console.log('Processing webhook for envelope:', {
-      envelopeId: data.envelopeId,
-      status: data.status,
-      emailSubject: data.emailSubject
-    });
+    if (!data.envelopeId) {
+      console.error('Error: Missing envelopeId in payload:', data);
+      return res.status(400).json({
+        error: 'Invalid payload',
+        message: 'Missing required field: envelopeId',
+        receivedPayload: data,
+        timestamp: new Date().toISOString()
+      });
+    }
 
-    // Check if this is a completed envelope
+    console.log('\n=== Processing Envelope Status ===');
+    console.log('Envelope ID:', data.envelopeId);
+    console.log('Current Status:', data.status);
+
+    // Process completed envelopes
     if (data.status === 'completed') {
-      console.log('Envelope completed, updating application status');
+      console.log('\n=== Querying Supabase ===');
       
+      // Query Supabase for the application
       const { data: applications, error: queryError } = await supabase
         .from('applications')
-        .select('id, status')
+        .select('id, status, envelope_id')
         .eq('envelope_id', data.envelopeId)
         .single();
 
+      // Log Supabase query results
+      console.log('Supabase Query Results:', {
+        success: !queryError,
+        error: queryError,
+        applicationFound: !!applications,
+        applicationData: applications
+      });
+
       if (queryError) {
-        console.error('Error finding application:', queryError);
-        throw new Error('Failed to find application');
+        console.error('Supabase Query Error:', queryError);
+        throw new Error(`Database query failed: ${queryError.message}`);
       }
 
-      if (applications) {
-        console.log('Found application:', applications);
-        
-        const { error: updateError } = await supabase
-          .from('applications')
-          .update({ status: 'signed' })
-          .eq('id', applications.id);
-
-        if (updateError) {
-          console.error('Error updating application:', updateError);
-          throw new Error('Failed to update application status');
-        }
-
-        console.log(`Updated application ${applications.id} status to signed`);
-      } else {
-        console.warn('No application found for envelope:', data.envelopeId);
+      if (!applications) {
+        console.warn('No matching application found for envelope:', data.envelopeId);
+        return res.status(404).json({
+          warning: 'Application not found',
+          envelopeId: data.envelopeId,
+          timestamp: new Date().toISOString()
+        });
       }
-    } else {
-      console.log('Envelope status not completed:', data.status);
+
+      console.log('\n=== Updating Application Status ===');
+      console.log('Application ID:', applications.id);
+      console.log('Current Status:', applications.status);
+      
+      // Update application status
+      const { error: updateError } = await supabase
+        .from('applications')
+        .update({ 
+          status: 'signed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', applications.id);
+
+      if (updateError) {
+        console.error('Status Update Error:', updateError);
+        throw new Error(`Failed to update status: ${updateError.message}`);
+      }
+
+      console.log('Successfully updated application status to signed');
+      
+      return res.status(200).json({
+        message: 'Webhook processed successfully',
+        envelopeId: data.envelopeId,
+        applicationId: applications.id,
+        newStatus: 'signed',
+        timestamp: new Date().toISOString()
+      });
     }
 
-    res.status(200).json({ 
-      message: 'Webhook processed successfully',
+    // Handle non-completed status
+    console.log('Envelope not completed, no action needed');
+    return res.status(200).json({
+      message: 'Webhook received, no action needed',
       envelopeId: data.envelopeId,
-      status: data.status
+      status: data.status,
+      timestamp: new Date().toISOString()
     });
+
   } catch (error) {
-    console.error('Error processing DocuSign webhook:', {
-      error: error.message,
-      stack: error.stack,
-      body: req.body
-    });
+    console.error('\n=== Webhook Processing Error ===');
+    console.error('Error Type:', error.constructor.name);
+    console.error('Error Message:', error.message);
+    console.error('Error Stack:', error.stack);
+    console.error('Request Body:', req.body);
     
-    res.status(500).json({ 
-      error: 'Failed to process webhook',
-      details: error.message,
+    return res.status(500).json({
+      error: 'Webhook processing failed',
+      type: error.constructor.name,
+      message: error.message,
       timestamp: new Date().toISOString()
     });
   }
