@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApplicationForm } from '../../hooks/useApplicationForm';
+import { Info } from 'lucide-react';
 
 export function ApplicationForm() {
   const { 
@@ -18,9 +19,17 @@ export function ApplicationForm() {
       )}
       
       <div>
-        <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-          Project Title
-        </label>
+        <div className="flex items-center gap-2">
+          <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+            Project Title
+          </label>
+          <div className="group relative">
+            <Info className="h-4 w-4 text-gray-400 hover:text-gray-500 cursor-help" />
+            <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
+              Choose a clear, specific title that describes your project. Keep it concise but informative.
+            </div>
+          </div>
+        </div>
         <input
           type="text"
           id="title"
@@ -28,29 +37,61 @@ export function ApplicationForm() {
           value={formData.title}
           onChange={handleChange}
           required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          placeholder="Example: Mobile App for Local Food Bank Inventory Management"
+          className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 hover:border-gray-400"
         />
       </div>
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-          Project Description
-        </label>
+        <div className="flex items-center gap-2">
+          <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+            Project Description
+          </label>
+          <div className="group relative">
+            <Info className="h-4 w-4 text-gray-400 hover:text-gray-500 cursor-help" />
+            <div className="invisible group-hover:visible absolute left-0 top-6 w-72 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
+              <p className="font-medium mb-1">Please include:</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Purpose of your project</li>
+                <li>Why you need this grant</li>
+                <li>How you'll use the funds</li>
+                <li>Expected impact</li>
+                <li>Implementation timeline</li>
+              </ul>
+            </div>
+          </div>
+        </div>
         <textarea
           id="description"
           name="description"
           value={formData.description}
           onChange={handleChange}
           required
-          rows={4}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          rows={8}
+          placeholder="Example: Our project aims to develop a mobile app that helps local food banks better manage their inventory. We need this grant to cover initial development costs and server expenses. The funds will be used for development tools, hosting services, and user testing. This app will help food banks reduce waste and serve more people in need. We plan to complete development within 3 months and launch a pilot program with two local food banks."
+          className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 hover:border-gray-400"
         />
       </div>
 
       <div>
-        <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
-          Amount Requested ($)
-        </label>
+        <div className="flex items-center gap-2">
+          <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
+            Amount Requested ($)
+          </label>
+          <div className="group relative">
+            <Info className="h-4 w-4 text-gray-400 hover:text-gray-500 cursor-help" />
+            <div className="invisible group-hover:visible absolute left-0 top-6 w-72 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
+              <p className="font-medium mb-1">Consider all costs including:</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Development or implementation costs</li>
+                <li>Equipment or materials</li>
+                <li>Operating expenses</li>
+                <li>Marketing or outreach costs</li>
+                <li>Other project-related expenses</li>
+              </ul>
+            </div>
+          </div>
+        </div>
         <input
           type="number"
           id="amount"
@@ -60,7 +101,8 @@ export function ApplicationForm() {
           required
           min="0"
           step="0.01"
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          placeholder="Example: 5000.00"
+          className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 hover:border-gray-400"
         />
       </div>
 
