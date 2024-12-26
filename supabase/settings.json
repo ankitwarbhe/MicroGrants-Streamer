@@ -1,0 +1,8 @@
+{
+  "project_id": "zrloehvqklyjpxjzjzod",
+  "org_id": "wwnnczrseslrgkxviblb",
+  "db_host": "db.zrloehvqklyjpxjzjzod.supabase.co",
+  "db_port": 5432,
+  "db_name": "postgres",
+  "db_user": "postgres"
+} 

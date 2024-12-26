@@ -7,6 +7,7 @@ import { HomePage } from './pages/HomePage';
 import { AboutPage } from './pages/AboutPage';
 import { NewApplicationPage } from './pages/NewApplicationPage';
 import { ApplicationDetailsPage } from './pages/ApplicationDetailsPage';
+import { SignatureRequest } from './components/docusign/SignatureRequest';
 
 export default function App() {
   return (
@@ -38,6 +39,16 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <ApplicationDetailsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sign-document"
+            element={
+              <ProtectedRoute>
+                <div className="container mx-auto py-8">
+                  <SignatureRequest />
+                </div>
               </ProtectedRoute>
             }
           />
