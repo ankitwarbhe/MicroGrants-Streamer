@@ -6,9 +6,24 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { createServer } from 'http';
 import PDFDocument from 'pdfkit';
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Initialize Supabase client
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error('Missing Supabase credentials');
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const app = express();
 
@@ -134,11 +149,12 @@ app.post('/api/docusign/envelopes', async (req, res) => {
   try {
     const { accountId, envelope, accessToken, applicationId } = req.body;
     console.log('Creating envelope for account:', accountId);
-    console.log('Envelope data:', {
-      subject: envelope.emailSubject,
+    console.log('Request data:', {
+      applicationId,
+      accountId,
+      envelopeSubject: envelope.emailSubject,
       documentName: envelope.documents?.[0]?.name,
-      signerEmail: envelope.recipients?.signers?.[0]?.email,
-      applicationId
+      signerEmail: envelope.recipients?.signers?.[0]?.email
     });
 
     // Forward the request to DocuSign
@@ -157,7 +173,8 @@ app.post('/api/docusign/envelopes', async (req, res) => {
     console.log('DocuSign envelope response:', {
       status: response.status,
       statusText: response.statusText,
-      data: data.error ? data : '***'
+      envelopeId: data.envelopeId,
+      error: data.error
     });
 
     if (!response.ok) {
@@ -167,13 +184,44 @@ app.post('/api/docusign/envelopes', async (req, res) => {
 
     // Store the envelope ID with the application
     if (applicationId && data.envelopeId) {
-      // TODO: Add your database update logic here
-      // Example:
-      // await db.query(
-      //   'UPDATE applications SET envelope_id = $1, status = $2 WHERE id = $3',
-      //   [data.envelopeId, 'pending_signature', applicationId]
-      // );
-      console.log(`Stored envelope ID ${data.envelopeId} for application ${applicationId}`);
+      console.log('Updating application in database:', {
+        applicationId,
+        envelopeId: data.envelopeId
+      });
+
+      const { data: updateData, error: updateError } = await supabase
+        .from('applications')
+        .update({
+          envelope_id: data.envelopeId,
+          status: 'pending_signature'
+        })
+        .eq('id', applicationId)
+        .select();
+
+      console.log('Supabase update response:', {
+        data: updateData,
+        error: updateError,
+        query: {
+          table: 'applications',
+          id: applicationId,
+          updates: {
+            envelope_id: data.envelopeId,
+            status: 'pending_signature'
+          }
+        }
+      });
+
+      if (updateError) {
+        console.error('Error updating application:', updateError);
+        throw new Error('Failed to update application status');
+      }
+      
+      console.log(`Successfully updated application ${applicationId} with envelope ${data.envelopeId}`);
+    } else {
+      console.warn('Missing required data for database update:', {
+        hasApplicationId: !!applicationId,
+        hasEnvelopeId: !!data.envelopeId
+      });
     }
 
     res.json(data);
@@ -188,6 +236,57 @@ app.post('/api/docusign/envelopes', async (req, res) => {
       error: error.message,
       details: error.stack,
       docusignError: error.response?.data
+    });
+  }
+});
+
+// DocuSign Connect webhook endpoint
+app.post('/api/docusign/connect', async (req, res) => {
+  try {
+    const data = req.body;
+    console.log('Received DocuSign Connect webhook:', {
+      envelopeId: data.envelopeId,
+      status: data.status
+    });
+
+    // Verify the webhook is from DocuSign using HMAC validation
+    // You should set up HMAC validation in DocuSign Connect settings
+    // and verify the signature here
+
+    // Check if this is a completed envelope
+    if (data.status === 'completed') {
+      const { data: applications, error: queryError } = await supabase
+        .from('applications')
+        .select('id, status')
+        .eq('envelope_id', data.envelopeId)
+        .single();
+
+      if (queryError) {
+        console.error('Error finding application:', queryError);
+        throw new Error('Failed to find application');
+      }
+
+      if (applications) {
+        const { error: updateError } = await supabase
+          .from('applications')
+          .update({ status: 'signed' })
+          .eq('id', applications.id);
+
+        if (updateError) {
+          console.error('Error updating application:', updateError);
+          throw new Error('Failed to update application status');
+        }
+
+        console.log(`Updated application ${applications.id} status to signed`);
+      }
+    }
+
+    res.status(200).json({ message: 'Webhook processed successfully' });
+  } catch (error) {
+    console.error('Error processing DocuSign webhook:', error);
+    res.status(500).json({ 
+      error: 'Failed to process webhook',
+      details: error.message 
     });
   }
 });

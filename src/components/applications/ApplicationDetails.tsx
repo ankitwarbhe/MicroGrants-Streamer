@@ -168,7 +168,8 @@ export function ApplicationDetails() {
         documentPath: pdfBase64,
         signerEmail: application.user_email || '',
         signerName: application.user_email?.split('@')[0] || 'Applicant',
-        documentName: `${application.title} - Grant Agreement.pdf`
+        documentName: `${application.title} - Grant Agreement.pdf`,
+        applicationId: id
       });
 
       // Update application status
