@@ -383,10 +383,29 @@ app.post('/api/docusign/connect', async (req, res) => {
 // PDF Generation endpoint
 app.post('/api/generate-pdf', async (req, res) => {
   try {
-    const { title, description, amount, submissionDate } = req.body;
+    const { 
+      title, 
+      description, 
+      amount, 
+      submissionDate, 
+      applicantName,
+      projectGoals,
+      timeline,
+      budget,
+      impact,
+      feedback 
+    } = req.body;
     
     // Create a new PDF document
-    const doc = new PDFDocument();
+    const doc = new PDFDocument({
+      size: 'A4',
+      margins: {
+        top: 50,
+        bottom: 50,
+        left: 50,
+        right: 50
+      }
+    });
     const chunks = [];
 
     // Collect PDF data chunks
@@ -397,44 +416,179 @@ app.post('/api/generate-pdf', async (req, res) => {
       res.json({ pdfBase64: base64String });
     });
 
-    // Add content to the PDF
+    // Add letterhead
     doc
-      .fontSize(20)
-      .text('Grant Agreement', { align: 'center' })
+      .fontSize(24)
+      .font('Helvetica-Bold')
+      .text('Micro-Grants Program Agreement', { align: 'center' })
       .moveDown(2);
 
+    // Add agreement preamble
     doc
       .fontSize(12)
-      .text('Application Details', { underline: true })
+      .font('Helvetica')
+      .text(`This Agreement ("Agreement") is entered into as of ${new Date().toLocaleDateString()} ("Effective Date") by and between Grant Microsystem by Ankit ("Grantor"), and ${applicantName} ("Recipient").`, { align: 'justify' })
+      .moveDown(2);
+
+    // Project Overview Section
+    doc
+      .font('Helvetica-Bold')
+      .text('Project Overview', { underline: true })
+      .moveDown(1)
+      .font('Helvetica')
+      .text('Project Title: ' + title)
+      .moveDown(0.5)
+      .text('Project Description:', { continued: true })
+      .font('Helvetica')
+      .text(description, { align: 'justify' })
+      .moveDown(1);
+
+    // Project Goals
+    if (projectGoals) {
+      doc
+        .font('Helvetica-Bold')
+        .text('Project Goals:')
+        .font('Helvetica')
+        .text(projectGoals, { align: 'justify' })
+        .moveDown(1);
+    }
+
+    // Timeline
+    if (timeline) {
+      doc
+        .font('Helvetica-Bold')
+        .text('Project Timeline:')
+        .font('Helvetica')
+        .text(timeline, { align: 'justify' })
+        .moveDown(1);
+    }
+
+    // Budget Details
+    if (budget) {
+      doc
+        .font('Helvetica-Bold')
+        .text('Budget Breakdown:')
+        .font('Helvetica')
+        .text(budget, { align: 'justify' })
+        .moveDown(1);
+    }
+
+    // Expected Impact
+    if (impact) {
+      doc
+        .font('Helvetica-Bold')
+        .text('Expected Impact:')
+        .font('Helvetica')
+        .text(impact, { align: 'justify' })
+        .moveDown(1);
+    }
+
+    // Feedback Section
+    if (feedback) {
+      doc
+        .font('Helvetica-Bold')
+        .text('Review Feedback:')
+        .font('Helvetica')
+        .text(feedback, { align: 'justify' })
+        .moveDown(2);
+    }
+
+    // Agreement Sections
+    doc
+      .font('Helvetica-Bold')
+      .text('Agreement Terms', { underline: true })
+      .moveDown(1);
+
+    // 1. Purpose of the Grant
+    doc
+      .font('Helvetica-Bold')
+      .text('1. Purpose of the Grant')
+      .font('Helvetica')
+      .text('The Grantor agrees to provide the Recipient with a micro-grant for the purpose of funding the project described in the application submitted by the Recipient. The grant is intended solely for the approved project and must align with the mission of the Grantor.')
       .moveDown();
 
+    // 2. Grant Amount and Disbursement
     doc
-      .text(`Title: ${title}`)
-      .moveDown()
-      .text(`Description: ${description}`)
-      .moveDown()
-      .text(`Amount Requested: $${amount.toLocaleString()}`)
-      .moveDown()
+      .font('Helvetica-Bold')
+      .text('2. Grant Amount and Disbursement')
+      .font('Helvetica')
+      .text(`Grantor shall provide the Recipient with a grant in the amount of $${amount.toLocaleString()}, subject to the terms and conditions of this Agreement. Funds will be disbursed to the Recipient upon:`)
+      .moveDown(0.5)
+      .text('• Approval of the application.')
+      .text('• Submission of any required banking or payment details.')
+      .moveDown();
+
+    // 3. Use of Funds
+    doc
+      .font('Helvetica-Bold')
+      .text('3. Use of Funds')
+      .font('Helvetica')
+      .text('The Recipient agrees to use the grant funds exclusively for the purposes outlined in the approved application. Any deviation from the approved use must be pre-approved in writing by the Grantor.')
+      .moveDown();
+
+    // 4. Reporting Requirements
+    doc
+      .font('Helvetica-Bold')
+      .text('4. Reporting Requirements')
+      .font('Helvetica')
+      .text('The Recipient shall provide the Grantor with:')
+      .moveDown(0.5)
+      .text('• A progress report within 6 months of receiving funds.')
+      .text('• A final report upon project completion, detailing outcomes, expenditures, and impact.')
+      .moveDown();
+
+    // 5. Compliance
+    doc
+      .font('Helvetica-Bold')
+      .text('5. Compliance with Laws')
+      .font('Helvetica')
+      .text('The Recipient agrees to comply with all applicable laws, regulations, and guidelines in the implementation of the project.')
+      .moveDown(2);
+
+    // Summary Details
+    doc
+      .font('Helvetica-Bold')
+      .text('Grant Summary')
+      .moveDown(0.5)
+      .font('Helvetica')
+      .text(`Total Grant Amount: $${amount.toLocaleString()}`)
       .text(`Submission Date: ${submissionDate}`)
       .moveDown(2);
 
+    // Signature section
     doc
-      .text('Terms and Conditions', { underline: true })
+      .font('Helvetica-Bold')
+      .text('Acknowledgment and Signatures')
+      .font('Helvetica')
       .moveDown()
-      .text('By signing this document, you agree to:')
+      .text('I, the undersigned Recipient, agree to the terms and conditions outlined in this Agreement and certify that the information provided is accurate to the best of my knowledge.')
+      .moveDown(2)
+      .text('Recipient:')
       .moveDown()
-      .text('1. Use the grant funds solely for the purpose described in the application')
-      .text('2. Provide progress reports as requested')
-      .text('3. Return any unused funds')
-      .text('4. Acknowledge the grantor in any public communications about the funded project')
-      .moveDown(2);
+      .text(`Name: ${applicantName}`)
+      .moveDown()
+      .text('Signature: _______________________________')
+      .moveDown()
+      .text('Date: _______________________________')
+      .moveDown(2)
+      .text('Grantor:')
+      .moveDown()
+      .text('Name: Grant Microsystem by Ankit')
+      .moveDown()
+      .text('Signature: _______________________________')
+      .moveDown()
+      .text('Date: _______________________________');
 
+    // Add DocuSign signing fields
     doc
-      .text('Signature', { underline: true })
+      .moveDown(2)
+      .text('/sn1/ _________________________', { align: 'left' })
       .moveDown()
-      .text('/sig1/', { align: 'center' })
+      .text('/dt1/ _________________________', { align: 'left' })
+      .moveDown(2)
+      .text('/sn2/ _________________________', { align: 'left' })
       .moveDown()
-      .text('Date: ' + new Date().toLocaleDateString(), { align: 'center' });
+      .text('/dt2/ _________________________', { align: 'left' });
 
     // Finalize the PDF
     doc.end();
