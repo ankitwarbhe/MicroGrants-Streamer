@@ -52,41 +52,26 @@ app.use(express.json({
 // Helper function to format private key
 function formatPrivateKey(key) {
   try {
-    // Log the input key for debugging
-    console.log('Input key format:', {
-      length: key?.length,
-      sample: key?.substring(0, 50) + '...'
-    });
-
     if (!key) {
       throw new Error('Private key is empty or undefined');
     }
 
-    // If the key already has headers, extract just the content
-    if (key.includes('-----BEGIN RSA PRIVATE KEY-----')) {
-      key = key
-        .replace('-----BEGIN RSA PRIVATE KEY-----', '')
-        .replace('-----END RSA PRIVATE KEY-----', '')
-        .replace(/[\r\n\s]/g, '');
-    }
+    // Remove any existing headers, footers, and whitespace
+    let cleanKey = key
+      .replace(/-----BEGIN.*KEY-----/, '')
+      .replace(/-----END.*KEY-----/, '')
+      .replace(/[\r\n\s]/g, '');
 
-    // Split the key content into 64-character chunks
-    const chunks = key.match(/.{1,64}/g) || [];
+    // Split into 64-character chunks
+    const chunks = cleanKey.match(/.{1,64}/g) || [];
     
-    // Reconstruct the key with proper PEM format
-    const formattedKey = [
-      '-----BEGIN RSA PRIVATE KEY-----',
+    // Build the formatted key with proper PEM format
+    return [
+      '-----BEGIN PRIVATE KEY-----',
       ...chunks,
-      '-----END RSA PRIVATE KEY-----'
+      '-----END PRIVATE KEY-----'
     ].join('\n');
 
-    // Log the formatted key details
-    console.log('Private key format:', {
-      chunks: chunks.length,
-      totalLines: formattedKey.split('\n').length
-    });
-
-    return formattedKey;
   } catch (error) {
     console.error('Error formatting private key:', error);
     throw new Error(`Failed to format private key: ${error.message}`);
@@ -96,8 +81,11 @@ function formatPrivateKey(key) {
 // DocuSign authentication endpoint
 app.post('/api/docusign/auth', async (req, res) => {
   try {
-    const { integrationKey, userId, privateKey } = req.body;
-    console.log('Received auth request for user:', userId);
+    const { integrationKey = docusignIntegrationKey, userId = docusignUserId, privateKey = docusignPrivateKey } = req.body;
+    
+    if (!integrationKey || !userId || !privateKey) {
+      throw new Error('Missing required DocuSign credentials');
+    }
 
     // Create JWT token payload
     const payload = {
@@ -109,25 +97,25 @@ app.post('/api/docusign/auth', async (req, res) => {
       scope: 'signature impersonation'
     };
 
-    console.log('Creating JWT with payload:', { ...payload, iss: '***', sub: '***' });
-
-    // Format the private key
+    // Format and log the private key for debugging
     const formattedKey = formatPrivateKey(privateKey);
+    console.log('Key format:', {
+      hasHeader: formattedKey.includes('-----BEGIN PRIVATE KEY-----'),
+      hasFooter: formattedKey.includes('-----END PRIVATE KEY-----'),
+      length: formattedKey.length,
+      lines: formattedKey.split('\n').length
+    });
 
     // Sign the JWT token
     const assertion = jwt.sign(payload, formattedKey, { 
       algorithm: 'RS256'
     });
-    console.log('JWT token created successfully');
 
     // Get access token from DocuSign
-    console.log('Requesting access token from DocuSign...');
     const response = await fetch('https://account-d.docusign.com/oauth/token', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'docusign-node-client',
-        'X-DocuSign-SDK': 'Node'
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: new URLSearchParams({
         'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
@@ -136,12 +124,7 @@ app.post('/api/docusign/auth', async (req, res) => {
     });
 
     const data = await response.json();
-    console.log('DocuSign response:', {
-      status: response.status,
-      statusText: response.statusText,
-      data: data.error ? data : '***'
-    });
-
+    
     if (!response.ok) {
       throw new Error(`DocuSign error: ${data.error || 'Unknown error'}`);
     }
@@ -151,7 +134,8 @@ app.post('/api/docusign/auth', async (req, res) => {
     console.error('Authentication error:', error);
     res.status(500).json({ 
       error: error.message,
-      details: error.stack
+      details: error.stack,
+      timestamp: new Date().toISOString()
     });
   }
 });
