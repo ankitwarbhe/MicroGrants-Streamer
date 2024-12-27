@@ -6,12 +6,16 @@ interface FormData {
   title: string;
   description: string;
   amount_requested: string;
+  first_name: string;
+  last_name: string;
 }
 
 const initialFormData: FormData = {
   title: '',
   description: '',
   amount_requested: '',
+  first_name: '',
+  last_name: '',
 };
 
 export function useApplicationForm() {

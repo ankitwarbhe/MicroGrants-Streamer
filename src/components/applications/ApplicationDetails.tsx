@@ -447,6 +447,35 @@ export function ApplicationDetails() {
                   </dd>
                 </div>
 
+                <div className="sm:col-span-2 grid grid-cols-2 gap-4">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">First Name</dt>
+                    <dd className="mt-1">
+                      <input
+                        type="text"
+                        name="first_name"
+                        value={editedData.first_name}
+                        onChange={handleChange}
+                        required
+                        className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      />
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Last Name</dt>
+                    <dd className="mt-1">
+                      <input
+                        type="text"
+                        name="last_name"
+                        value={editedData.last_name}
+                        onChange={handleChange}
+                        required
+                        className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      />
+                    </dd>
+                  </div>
+                </div>
+
                 <div className="sm:col-span-2 flex justify-end space-x-3 pt-4">
                   <button
                     type="button"
@@ -499,6 +528,20 @@ export function ApplicationDetails() {
                   </dt>
                   <dd className="mt-1 text-sm text-gray-900">
                     {new Date(application.created_at).toLocaleDateString()}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Applicant Name</dt>
+                  <dd className="mt-1 text-sm text-gray-900">
+                    {application.first_name} {application.last_name}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Email</dt>
+                  <dd className="mt-1 text-sm text-gray-900">
+                    {application.user_email}
                   </dd>
                 </div>
 

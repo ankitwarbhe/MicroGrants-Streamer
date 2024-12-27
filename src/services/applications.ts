@@ -15,6 +15,8 @@ export async function createApplication(data: ApplicationInput) {
       title: data.title,
       description: data.description,
       amount_requested: data.amount_requested,
+      first_name: data.first_name,
+      last_name: data.last_name,
       status: 'draft',
       user_id: user.id
     })

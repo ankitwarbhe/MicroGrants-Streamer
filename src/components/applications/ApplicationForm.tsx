@@ -106,6 +106,42 @@ export function ApplicationForm() {
         />
       </div>
 
+      <div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
+            First Name
+          </label>
+        </div>
+        <input
+          type="text"
+          id="first_name"
+          name="first_name"
+          value={formData.first_name}
+          onChange={handleChange}
+          required
+          placeholder="Enter your first name"
+          className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 hover:border-gray-400"
+        />
+      </div>
+
+      <div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
+            Last Name
+          </label>
+        </div>
+        <input
+          type="text"
+          id="last_name"
+          name="last_name"
+          value={formData.last_name}
+          onChange={handleChange}
+          required
+          placeholder="Enter your last name"
+          className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 hover:border-gray-400"
+        />
+      </div>
+
       <button
         type="submit"
         disabled={loading}

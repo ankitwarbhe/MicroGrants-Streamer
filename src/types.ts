@@ -10,6 +10,8 @@ export interface Application {
   id: string;
   user_id: string;
   user_email?: string;
+  first_name: string;
+  last_name: string;
   title: string;
   description: string;
   amount_requested: number;
