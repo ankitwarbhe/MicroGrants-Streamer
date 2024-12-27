@@ -150,7 +150,7 @@ export class DocuSignService {
           accessToken: access_token,
           applicationId,
           envelope: {
-            emailSubject: 'Please sign this document',
+            emailSubject: `Please sign the grant agreement for: ${documentName.replace(' - Grant Agreement.pdf', '')}`,
             documents: [{
               documentBase64: documentPath,
               name: documentName,
