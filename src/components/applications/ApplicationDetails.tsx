@@ -16,6 +16,14 @@ const STATUS_BADGES = {
   signed: { color: 'bg-emerald-100 text-emerald-800', icon: FileSignature }
 };
 
+interface EditedData {
+  title: string;
+  description: string;
+  amount_requested: number;
+  first_name: string;
+  last_name: string;
+}
+
 export function ApplicationDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -23,7 +31,13 @@ export function ApplicationDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState<Partial<Application>>({});
+  const [editedData, setEditedData] = useState<EditedData>({
+    title: '',
+    description: '',
+    amount_requested: 0,
+    first_name: '',
+    last_name: ''
+  });
   const [updateLoading, setUpdateLoading] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -46,6 +60,8 @@ export function ApplicationDetails() {
           title: data.title,
           description: data.description,
           amount_requested: data.amount_requested,
+          first_name: data.first_name,
+          last_name: data.last_name
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load application details');
@@ -57,6 +73,18 @@ export function ApplicationDetails() {
     fetchApplication();
   }, [id]);
 
+  useEffect(() => {
+    if (application) {
+      setEditedData({
+        title: application.title,
+        description: application.description,
+        amount_requested: application.amount_requested,
+        first_name: application.first_name,
+        last_name: application.last_name
+      });
+    }
+  }, [application]);
+
   const handleEdit = () => {
     setIsEditing(true);
   };
@@ -67,6 +95,8 @@ export function ApplicationDetails() {
         title: application.title,
         description: application.description,
         amount_requested: application.amount_requested,
+        first_name: application.first_name,
+        last_name: application.last_name
       });
     }
     setIsEditing(false);
