@@ -168,6 +168,19 @@ export class DocuSignService {
                     anchorUnits: 'pixels',
                     anchorXOffset: '0',
                     anchorYOffset: '0'
+                  }],
+                  fullNameTabs: [{
+                    anchorString: '/sn1/',
+                    anchorUnits: 'pixels',
+                    anchorXOffset: '0',
+                    anchorYOffset: '0',
+                    name: signerName
+                  }],
+                  dateSignedTabs: [{
+                    anchorString: '/dt1/',
+                    anchorUnits: 'pixels',
+                    anchorXOffset: '0',
+                    anchorYOffset: '0'
                   }]
                 }
               }]

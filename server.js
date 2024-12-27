@@ -423,19 +423,21 @@ app.post('/api/generate-pdf', async (req, res) => {
       .text('Micro-Grants Program Agreement', { align: 'center' })
       .moveDown(2);
 
-    // Add agreement preamble
+    // Add agreement preamble with applicant name
     doc
       .fontSize(12)
       .font('Helvetica')
-      .text(`This Agreement ("Agreement") is entered into as of ${new Date().toLocaleDateString()} ("Effective Date") by and between Grant Microsystem by Ankit ("Grantor"), and ("Recipient").`, { align: 'justify' })
+      .text(`This Agreement ("Agreement") is entered into as of ${new Date().toLocaleDateString()} ("Effective Date") by and between Grant Microsystem by Ankit ("Grantor"), and ${applicantName} ("Recipient").`, { align: 'justify' })
       .moveDown(2);
 
-    // Project Overview Section
+    // Project Overview Section with applicant name
     doc
       .font('Helvetica-Bold')
       .text('Project Overview', { underline: true })
       .moveDown(1)
       .font('Helvetica')
+      .text('Applicant Name: ' + applicantName)
+      .moveDown(0.5)
       .text('Project Title: ' + title)
       .moveDown(0.5)
       .text('Project Description:', { continued: true })
@@ -564,15 +566,19 @@ app.post('/api/generate-pdf', async (req, res) => {
       .text('I, the undersigned Recipient, agree to the terms and conditions outlined in this Agreement and certify that the information provided is accurate to the best of my knowledge.')
       .moveDown(2);
 
-    // Recipient signature block
+    // Recipient signature block with applicant name
     doc
       .font('Helvetica-Bold')
       .text('Recipient:')
       .moveDown()
+      .text('Name: ' + applicantName)
+      .moveDown()
       .text('Signature: ', { continued: true })
+      .text('/sn1/', { continued: true }) // DocuSign name tag
       .text('________________________')
       .moveDown()
       .text('Date: ', { continued: true })
+      .text('/dt1/', { continued: true }) // DocuSign date tag
       .text('________________________')
       .moveDown(2);
 
