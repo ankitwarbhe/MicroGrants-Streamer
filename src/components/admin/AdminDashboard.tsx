@@ -288,6 +288,9 @@ export function AdminDashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
+                          {application.first_name} {application.last_name}
+                        </div>
+                        <div className="text-sm text-gray-500">
                           {application.user_email || 'Unknown'}
                         </div>
                       </td>
