@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 import { CURRENCY_SYMBOLS } from '../../types';
 import { DisbursementTracker } from '../disbursement/DisbursementTracker';
+import { QRCodeSVG } from 'qrcode.react';
 
 const STATUS_BADGES = {
   draft: { color: 'bg-gray-100 text-gray-800', icon: Clock },
@@ -79,6 +80,8 @@ export function ApplicationDetails() {
   const [submittingPayment, setSubmittingPayment] = useState(false);
   const [upiError, setUpiError] = useState<string>('');
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [showUpiQR, setShowUpiQR] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
 
   const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
   const isOwner = application?.user_id === user?.id;
@@ -359,6 +362,17 @@ export function ApplicationDetails() {
     } finally {
       setSubmittingPayment(false);
     }
+  };
+
+  // Add this function to generate UPI payment URL
+  const generateUpiUrl = () => {
+    if (!application?.payment_details) return '';
+    
+    const pa = application.payment_details.upi_id;
+    const pn = application.payment_details.beneficiary_name;
+    const am = application.amount_requested;
+    
+    return `upi://pay?pa=${encodeURIComponent(pa)}&pn=${encodeURIComponent(pn)}&cu=INR&am=${am}`;
   };
 
   if (loading) {
@@ -645,9 +659,23 @@ export function ApplicationDetails() {
         ) : (
           <>
             <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                {application.title}
-              </h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  {application.title}
+                </h3>
+                {(isAdmin && application.has_submitted_payment_details) && (
+                  <button
+                    onClick={() => !paymentCompleted && setShowUpiQR(true)}
+                    disabled={paymentCompleted}
+                    className={`inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md 
+                      ${paymentCompleted 
+                        ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
+                        : 'text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'}`}
+                  >
+                    {paymentCompleted ? 'Paid' : 'Pay Now'}
+                  </button>
+                )}
+              </div>
             </div>
             <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
               <dl className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
@@ -1065,6 +1093,61 @@ export function ApplicationDetails() {
           userId={user.id} 
           isAdmin={isAdmin}
         />
+      )}
+
+      {/* Add UPI QR Code Modal */}
+      {showUpiQR && application?.payment_details && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-lg w-full max-w-md">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-medium">UPI Payment</h3>
+              <button
+                onClick={() => setShowUpiQR(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6 flex flex-col items-center space-y-4">
+              <div className="text-center mb-4">
+                <p className="text-sm text-gray-600">You are paying</p>
+                <p className="font-medium text-lg">{application.payment_details.beneficiary_name}</p>
+                <p className="text-2xl font-bold text-green-600">₹{application.amount_requested.toLocaleString()}</p>
+                <p className="text-sm text-gray-500 mt-1">UPI ID: {application.payment_details.upi_id}</p>
+              </div>
+              
+              <div className="bg-white p-4 rounded-lg shadow-sm border">
+                <QRCodeSVG
+                  value={generateUpiUrl()}
+                  size={200}
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+              
+              <p className="text-sm text-gray-500 text-center mt-4">
+                Scan this QR code with any UPI app to make the payment
+              </p>
+            </div>
+            <div className="p-4 border-t flex justify-end space-x-3">
+              <button
+                onClick={() => setShowUpiQR(false)}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setPaymentCompleted(true);
+                  setShowUpiQR(false);
+                }}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

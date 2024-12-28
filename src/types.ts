@@ -19,7 +19,7 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = {
   INR: '₹'
 };
 
-export type DisbursementStatus = 'pending' | 'initiated' | 'processing' | 'completed';
+export type DisbursementStatus = 'not_started' | 'pending' | 'initiated' | 'processing' | 'completed';
 
 export interface DisbursementStep {
   label: string;

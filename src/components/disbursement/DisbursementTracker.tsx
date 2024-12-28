@@ -5,9 +5,9 @@ import { updateApplication } from '../../services/applications';
 
 const defaultSteps: DisbursementStep[] = [
   { label: 'Payment Details Verification', status: 'pending' },
-  { label: 'Fund Allocation', status: 'pending' },
-  { label: 'Bank Transfer Initiated', status: 'pending' },
-  { label: 'Disbursement Complete', status: 'pending' }
+  { label: 'Fund Allocation', status: 'not_started' },
+  { label: 'Bank Transfer Initiated', status: 'not_started' },
+  { label: 'Disbursement Complete', status: 'not_started' }
 ];
 
 interface Props {
@@ -18,7 +18,19 @@ interface Props {
 }
 
 export function DisbursementTracker({ applicationId, steps = defaultSteps, isAdmin, onUpdate }: Props) {
-  const currentSteps = steps?.length ? steps : defaultSteps;
+  const currentSteps = React.useMemo(() => {
+    // If no steps provided, initialize with default steps
+    if (!steps?.length) {
+      return defaultSteps;
+    }
+    
+    // If steps exist but first step isn't pending or further, initialize it
+    const initializedSteps = [...steps];
+    if (!initializedSteps[0].status || initializedSteps[0].status === 'not_started') {
+      initializedSteps[0] = { ...initializedSteps[0], status: 'pending' };
+    }
+    return initializedSteps;
+  }, [steps]);
 
   const handleStepUpdate = async (index: number) => {
     if (!isAdmin) return;
@@ -45,6 +57,14 @@ export function DisbursementTracker({ applicationId, steps = defaultSteps, isAdm
       case 'processing':
         currentStep.status = 'completed';
         currentStep.date = new Date().toISOString();
+        // Set next step to pending if it exists
+        if (index < newSteps.length - 1) {
+          newSteps[index + 1] = {
+            ...newSteps[index + 1],
+            status: 'pending',
+            date: undefined
+          };
+        }
         break;
       default:
         return;
@@ -55,7 +75,9 @@ export function DisbursementTracker({ applicationId, steps = defaultSteps, isAdm
       const updated = await updateApplication(applicationId, {
         disbursement_steps: newSteps
       });
-      onUpdate?.(updated.disbursement_steps || newSteps);
+      if (updated.disbursement_steps) {
+        onUpdate?.(updated.disbursement_steps);
+      }
     } catch (error) {
       console.error('Failed to update disbursement status:', error);
     }
@@ -69,6 +91,8 @@ export function DisbursementTracker({ applicationId, steps = defaultSteps, isAdm
         return <div className="h-2 w-2 bg-white rounded-full animate-pulse" />;
       case 'initiated':
         return <Clock className="h-5 w-5 text-white" />;
+      case 'not_started':
+        return <div className="h-2 w-2 bg-gray-400 rounded-full" />;
       default:
         return <div className="h-2 w-2 bg-white rounded-full" />;
     }
@@ -82,6 +106,8 @@ export function DisbursementTracker({ applicationId, steps = defaultSteps, isAdm
         return 'bg-blue-500';
       case 'initiated':
         return 'bg-yellow-500';
+      case 'not_started':
+        return 'bg-gray-200';
       default:
         return 'bg-gray-300';
     }
