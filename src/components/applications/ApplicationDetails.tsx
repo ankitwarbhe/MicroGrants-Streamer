@@ -754,7 +754,7 @@ export function ApplicationDetails() {
                   <div className="sm:col-span-2 mt-6">
                     <DisbursementTracker
                       applicationId={application.id}
-                      steps={application.disbursement_steps}
+                      steps={application.disbursement_steps || undefined}
                       isAdmin={isAdmin}
                       onUpdate={(steps) => {
                         setApplication(prev => prev ? {
