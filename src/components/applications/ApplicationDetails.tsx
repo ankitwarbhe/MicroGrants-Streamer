@@ -180,33 +180,21 @@ export function ApplicationDetails() {
       const templateRole = {
         email: application.user_email || '',
         name: `${application.first_name} ${application.last_name}`,
-        roleName: 'Signer 1', // This should match the role name in your DocuSign template
+        roleName: 'Signer 1',
         tabs: {
-          // Make sure these match EXACTLY with the tag names in your DocuSign template
+          // Text tabs for custom fields
           textTabs: [
             {
-              tabLabel: 'Project_Title', // Example: adjust based on your template's actual tag name
+              tabLabel: 'Project_Title',
               value: application.title
             },
             {
-              tabLabel: 'Project_Description', // Example: adjust based on your template's actual tag name
+              tabLabel: 'Project_Description',
               value: application.description
             },
             {
-              tabLabel: 'Amount_Requested', // Example: adjust based on your template's actual tag name
+              tabLabel: 'Amount_Requested',
               value: `$${application.amount_requested.toLocaleString()}`
-            },
-            {
-              tabLabel: 'Applicant_Name', // Example: adjust based on your template's actual tag name
-              value: `${application.first_name} ${application.last_name}`
-            },
-            {
-              tabLabel: 'Applicant_Email', // Example: adjust based on your template's actual tag name
-              value: application.user_email || ''
-            },
-            {
-              tabLabel: 'Submission_Date', // Example: adjust based on your template's actual tag name
-              value: new Date(application.created_at).toLocaleDateString()
             }
           ]
         }
