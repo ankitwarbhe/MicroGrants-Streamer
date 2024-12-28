@@ -51,5 +51,6 @@ export interface Application {
     upi_id: string;
   };
   has_submitted_payment_details?: boolean;
+  payment_completed?: boolean;
   disbursement_steps?: DisbursementStep[];
 } 

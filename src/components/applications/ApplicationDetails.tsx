@@ -123,6 +123,12 @@ export function ApplicationDetails() {
     }
   }, [application]);
 
+  useEffect(() => {
+    if (application?.payment_completed) {
+      setPaymentCompleted(true);
+    }
+  }, [application?.payment_completed]);
+
   const handleEdit = () => {
     setIsEditing(true);
   };
@@ -373,6 +379,22 @@ export function ApplicationDetails() {
     const am = application.amount_requested;
     
     return `upi://pay?pa=${encodeURIComponent(pa)}&pn=${encodeURIComponent(pn)}&cu=INR&am=${am}`;
+  };
+
+  const handlePaymentComplete = async () => {
+    if (!application) return;
+    
+    try {
+      const updated = await updateApplication(application.id, {
+        ...application,
+        payment_completed: true
+      });
+      setApplication(updated);
+      setPaymentCompleted(true);
+      setShowUpiQR(false);
+    } catch (error) {
+      console.error('Failed to update payment status:', error);
+    }
   };
 
   if (loading) {
@@ -665,14 +687,14 @@ export function ApplicationDetails() {
                 </h3>
                 {(isAdmin && application.has_submitted_payment_details) && (
                   <button
-                    onClick={() => !paymentCompleted && setShowUpiQR(true)}
-                    disabled={paymentCompleted}
+                    onClick={() => !application.payment_completed && setShowUpiQR(true)}
+                    disabled={application.payment_completed}
                     className={`inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md 
-                      ${paymentCompleted 
+                      ${application.payment_completed 
                         ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
                         : 'text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'}`}
                   >
-                    {paymentCompleted ? 'Paid' : 'Pay Now'}
+                    {application.payment_completed ? 'Paid' : 'Pay Now'}
                   </button>
                 )}
               </div>
@@ -1137,10 +1159,7 @@ export function ApplicationDetails() {
                 Close
               </button>
               <button
-                onClick={() => {
-                  setPaymentCompleted(true);
-                  setShowUpiQR(false);
-                }}
+                onClick={handlePaymentComplete}
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               >
                 Done
