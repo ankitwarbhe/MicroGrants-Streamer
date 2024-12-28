@@ -7,7 +7,7 @@ import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 import { CURRENCY_SYMBOLS } from '../../types';
-import { getMilestones, updateMilestoneStage } from '../../services/disbursement';
+import { getMilestones, updateMilestoneStage, generateDefaultMilestones } from '../../services/disbursement';
 import { DisbursementTracker } from '../disbursement/DisbursementTracker';
 
 const STATUS_BADGES = {
@@ -355,6 +355,11 @@ export function ApplicationDetails() {
         has_submitted_payment_details: true
       });
       setApplication(updated);
+
+      // Generate default milestones after payment details are submitted
+      const milestones = await generateDefaultMilestones(updated);
+      setMilestones(milestones);
+
       setShowPaymentForm(false);
       setShowConfirmation(false);
     } catch (err) {
