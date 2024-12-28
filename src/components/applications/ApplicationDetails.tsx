@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication, withdrawApplication } from '../../services/applications';
 import { docuSignService } from '../../services/docusign.ts';
 import type { Application, Currency } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download, Undo, User } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download, Undo } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 import { CURRENCY_SYMBOLS } from '../../types';
@@ -336,33 +336,6 @@ export function ApplicationDetails() {
 
   return (
     <div className="space-y-6">
-      {user && (
-        <div className="bg-white shadow rounded-lg p-4 mb-6">
-          <div className="flex items-center space-x-4">
-            <div className="bg-indigo-100 rounded-full p-2">
-              <User className="h-6 w-6 text-indigo-600" />
-            </div>
-            <div>
-              <div className="text-sm font-medium text-gray-900">
-                {user.email}
-              </div>
-              <div className="flex items-center mt-1">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  isAdmin ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                }`}>
-                  {isAdmin ? 'Administrator' : 'Applicant'}
-                </span>
-                {user.user_metadata?.full_name && (
-                  <span className="ml-2 text-sm text-gray-500">
-                    {user.user_metadata.full_name}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
