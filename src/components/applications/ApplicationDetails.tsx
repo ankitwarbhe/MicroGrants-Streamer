@@ -7,6 +7,7 @@ import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 import { CURRENCY_SYMBOLS } from '../../types';
+import { DisbursementMilestones } from '../disbursement/DisbursementMilestones';
 
 const STATUS_BADGES = {
   draft: { color: 'bg-gray-100 text-gray-800', icon: Clock },
@@ -745,6 +746,21 @@ export function ApplicationDetails() {
                         <span className="text-sm text-gray-500 italic">Payment details not submitted yet</span>
                       )}
                     </dd>
+                  </div>
+                )}
+
+                {application.status === 'signed' && application.has_submitted_payment_details && (
+                  <div className="sm:col-span-2 border-t border-gray-200 pt-6 mt-6">
+                    <DisbursementMilestones
+                      application={application}
+                      isAdmin={isAdmin}
+                      onUpdate={() => {
+                        // Refresh application data when milestones are updated
+                        if (id) {
+                          getApplicationById(id).then(setApplication);
+                        }
+                      }}
+                    />
                   </div>
                 )}
               </dl>
