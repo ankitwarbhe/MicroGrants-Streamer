@@ -19,7 +19,7 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = {
   INR: '₹'
 };
 
-export type DisbursementStatus = 'pending' | 'approved' | 'released' | 'completed';
+export type DisbursementStage = 'pending' | 'in_progress' | 'completed';
 
 export interface DisbursementMilestone {
   id: string;
@@ -28,9 +28,8 @@ export interface DisbursementMilestone {
   title: string;
   description?: string;
   amount: number;
-  status: DisbursementStatus;
-  due_date?: string;
-  completed_date?: string;
+  stage: DisbursementStage;
+  completed_at?: string;
   created_at: string;
   updated_at: string;
 }
