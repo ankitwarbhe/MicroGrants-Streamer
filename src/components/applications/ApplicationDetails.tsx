@@ -642,7 +642,7 @@ export function ApplicationDetails() {
                   </div>
                 )}
 
-                {isAdmin && application.envelope_id && (
+                {(isAdmin || application.status === 'signed') && application.envelope_id && (
                   <div className="sm:col-span-2">
                     <dt className="text-sm font-medium text-gray-500 flex items-center">
                       <FileSignature className="h-4 w-4 mr-1" />
