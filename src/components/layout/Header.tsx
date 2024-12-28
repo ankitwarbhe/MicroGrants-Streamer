@@ -16,19 +16,28 @@ export function Header() {
             <span className="text-xl font-bold text-gray-900">MicroGrants</span>
           </Link>
 
-          {user && (
-            <div className="flex items-center gap-4">
-              <nav className="flex items-center gap-4">
-                <Link
-                  to="/dashboard"
-                  className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Dashboard
-                </Link>
-              </nav>
-              <ProfileMenu />
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            {user ? (
+              <>
+                <nav className="flex items-center gap-4">
+                  <Link
+                    to="/dashboard"
+                    className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Dashboard
+                  </Link>
+                </nav>
+                <ProfileMenu />
+              </>
+            ) : (
+              <Link
+                to="/auth"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </header>

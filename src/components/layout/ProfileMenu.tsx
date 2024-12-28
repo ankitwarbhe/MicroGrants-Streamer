@@ -23,7 +23,6 @@ export function ProfileMenu() {
 
   const userRole = user.user_metadata?.role || user.app_metadata?.role || 'applicant';
   const userEmail = user.email;
-  const userName = user.user_metadata?.full_name || userEmail;
 
   const handleSignOut = async () => {
     try {
@@ -46,7 +45,6 @@ export function ProfileMenu() {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
           <div className="px-4 py-3 border-b border-gray-200">
-            <div className="font-medium text-gray-900">{userName}</div>
             <div className="text-sm text-gray-500">{userEmail}</div>
           </div>
           
