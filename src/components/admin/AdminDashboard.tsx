@@ -12,10 +12,8 @@ const STATUS_BADGES = {
   submitted: { color: 'bg-blue-100 text-blue-800', icon: FileText },
   approved: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
   rejected: { color: 'bg-red-100 text-red-800', icon: XCircle },
-  pending_signature_applicant: { color: 'bg-purple-100 text-purple-800', icon: PenTool },
-  pending_signature_admin: { color: 'bg-indigo-100 text-indigo-800', icon: PenTool },
-  signed: { color: 'bg-emerald-100 text-emerald-800', icon: FileSignature },
-  terminated: { color: 'bg-red-100 text-red-800', icon: XCircle }
+  pending_signature: { color: 'bg-purple-100 text-purple-800', icon: PenTool },
+  signed: { color: 'bg-emerald-100 text-emerald-800', icon: FileSignature }
 };
 
 // Add formatAmount helper function
@@ -245,10 +243,8 @@ export function AdminDashboard() {
             <option value="submitted">Submitted</option>
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
-            <option value="pending_signature_applicant">Pending Applicant Signature</option>
-            <option value="pending_signature_admin">Pending Admin Signature</option>
+            <option value="pending_signature">Pending Signature</option>
             <option value="signed">Signed</option>
-            <option value="terminated">Terminated</option>
           </select>
         </div>
       </div>
