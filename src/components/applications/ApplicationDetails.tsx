@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication, withdrawApplication } from '../../services/applications';
 import { docuSignService } from '../../services/docusign.ts';
 import type { Application, Currency } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download, Undo } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download, Undo, Eye } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 import { CURRENCY_SYMBOLS } from '../../types';
@@ -54,6 +54,8 @@ export function ApplicationDetails() {
   const [signedDocument, setSignedDocument] = useState<string | null>(null);
   const [loadingDocument, setLoadingDocument] = useState(false);
   const [documentError, setDocumentError] = useState<string | null>(null);
+  const [showPdfViewer, setShowPdfViewer] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
   const isOwner = application?.user_id === user?.id;
@@ -255,7 +257,7 @@ export function ApplicationDetails() {
     setShowFeedbackModal(true);
   };
 
-  const handleDownloadSignedDocument = async () => {
+  const handleViewDocument = async () => {
     if (!application?.envelope_id) return;
     
     setLoadingDocument(true);
@@ -268,22 +270,24 @@ export function ApplicationDetails() {
       const blob = new Blob([Buffer.from(documentBase64, 'base64')], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       
-      // Create a link and click it to trigger download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${application.title}-signed.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      
+      setPdfUrl(url);
+      setShowPdfViewer(true);
       setSignedDocument(documentBase64);
     } catch (error) {
-      setDocumentError(error instanceof Error ? error.message : 'Failed to download signed document');
+      setDocumentError(error instanceof Error ? error.message : 'Failed to load document');
     } finally {
       setLoadingDocument(false);
     }
   };
+
+  // Add cleanup for PDF URL
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) {
+        window.URL.revokeObjectURL(pdfUrl);
+      }
+    };
+  }, [pdfUrl]);
 
   const handleWithdraw = async () => {
     if (!id || !application) return;
@@ -646,12 +650,12 @@ export function ApplicationDetails() {
                     </dt>
                     <dd className="mt-1">
                       <button
-                        onClick={handleDownloadSignedDocument}
+                        onClick={handleViewDocument}
                         disabled={loadingDocument}
                         className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                       >
-                        <Download className="h-4 w-4 mr-2" />
-                        {loadingDocument ? 'Downloading...' : application.status === 'signed' ? 'Download Signed Document' : 'Download Document'}
+                        <Eye className="h-4 w-4 mr-2" />
+                        {loadingDocument ? 'Loading...' : application.status === 'signed' ? 'View Signed Document' : 'View Document'}
                       </button>
                       {documentError && (
                         <p className="mt-2 text-sm text-red-600">{documentError}</p>
@@ -664,6 +668,34 @@ export function ApplicationDetails() {
           </>
         )}
       </div>
+
+      {showPdfViewer && pdfUrl && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg w-full max-w-6xl h-[90vh] flex flex-col">
+            <div className="p-4 flex justify-between items-center border-b">
+              <h3 className="text-lg font-medium">
+                {application?.status === 'signed' ? 'Signed Document' : 'Document'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowPdfViewer(false);
+                  setPdfUrl(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="flex-1 p-4">
+              <iframe
+                src={pdfUrl}
+                className="w-full h-full rounded-md"
+                title="PDF Viewer"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {user && (
         <ChatBot 
