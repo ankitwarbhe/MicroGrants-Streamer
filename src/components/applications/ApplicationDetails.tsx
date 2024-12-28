@@ -195,6 +195,10 @@ export function ApplicationDetails() {
             {
               tabLabel: 'Amount_Requested',
               value: `$${application.amount_requested.toLocaleString()}`
+            },
+            {
+              tabLabel: 'Submission_Date',
+              value: new Date(application.created_at).toLocaleDateString()
             }
           ]
         }
