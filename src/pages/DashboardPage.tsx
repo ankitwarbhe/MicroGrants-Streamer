@@ -10,7 +10,7 @@ export function DashboardPage() {
   const isAdmin = user?.user_metadata.role === 'admin';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="sm:flex sm:items-center sm:justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
           {isAdmin ? 'Admin Dashboard' : 'My Applications'}
