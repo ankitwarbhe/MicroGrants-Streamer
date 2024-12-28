@@ -721,7 +721,8 @@ export function ApplicationDetails() {
                   </div>
                 )}
 
-                {isOwner && application.status === 'signed' && (
+                {/* Payment Details Section - Visible to both owner and admin */}
+                {(isOwner || isAdmin) && application.status === 'signed' && (
                   <div className="sm:col-span-2">
                     <dt className="text-sm font-medium text-gray-500">Payment Details</dt>
                     <dd className="mt-1">
@@ -733,13 +734,15 @@ export function ApplicationDetails() {
                           <Eye className="h-4 w-4 mr-2" />
                           View Payment Details
                         </button>
-                      ) : (
+                      ) : isOwner ? (
                         <button
                           onClick={() => setShowPaymentForm(true)}
                           className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                         >
                           Submit Payment Details
                         </button>
+                      ) : (
+                        <span className="text-sm text-gray-500 italic">Payment details not submitted yet</span>
                       )}
                     </dd>
                   </div>
