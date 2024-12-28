@@ -174,7 +174,7 @@ export async function rejectApplication(id: string, feedback: string) {
       feedback: feedback 
     })
     .eq('id', id)
-    .eq('status', 'submitted') // Only allow rejecting submitted applications
+    .in('status', ['submitted', 'pending_signature']) // Allow rejecting both submitted and pending_signature applications
     .select('*')
     .single();
 
@@ -184,7 +184,7 @@ export async function rejectApplication(id: string, feedback: string) {
   }
 
   if (!application) {
-    throw new Error('Application not found or not in submitted state');
+    throw new Error('Application not found or not in a rejectable state');
   }
 
   return application;
