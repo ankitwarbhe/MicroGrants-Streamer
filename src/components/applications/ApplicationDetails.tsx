@@ -207,33 +207,14 @@ export function ApplicationDetails() {
       // Log the template role for debugging
       console.log('Template role:', templateRole);
 
-      // Test reminder and expiration settings
-      const reminderSettings = {
-        reminderEnabled: true,
-        reminderDelay: 1, // First reminder after 1 day (for testing)
-        reminderFrequency: 1, // Remind every day (for testing)
-      };
-
-      const expirationSettings = {
-        expirationEnabled: true,
-        expirationDays: 7, // Expire after 7 days (for testing)
-        warningDays: 2, // Warn 2 days before expiration (for testing)
-      };
-
-      // Log reminder and expiration settings for debugging
-      console.log('Reminder settings:', reminderSettings);
-      console.log('Expiration settings:', expirationSettings);
-
-      // Send for signature using DocuSign template with reminder settings
+      // Send for signature using DocuSign template
       await docuSignService.sendDocumentForSignature({
         signerEmail: application.user_email || '',
         signerName: `${application.first_name} ${application.last_name}`,
         documentName: `${application.title} - Grant Agreement`,
         applicationId: id,
         templateId: import.meta.env.VITE_DOCUSIGN_TEMPLATE_ID,
-        templateRoles: [templateRole],
-        reminderSettings,
-        expirationSettings
+        templateRoles: [templateRole]
       });
 
       // Update application status
