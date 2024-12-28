@@ -182,41 +182,52 @@ export function ApplicationDetails() {
   };
 
   const handleSendForSignature = async () => {
-    if (!id || !application) return;
+    if (!id || !application || !user) return;
     setUpdateLoading(true);
     try {
       // Log the application data for debugging
       console.log('Application data:', application);
 
-      const templateRole = {
-        email: application.user_email || '',
-        name: `${application.first_name} ${application.last_name}`,
-        roleName: 'Signer 1',
-        tabs: {
-          // Text tabs for custom fields
-          textTabs: [
-            {
-              tabLabel: 'Project_Title',
-              value: application.title
-            },
-            {
-              tabLabel: 'Project_Description',
-              value: application.description
-            },
-            {
-              tabLabel: 'Amount_Requested',
-              value: formatAmount(application.amount_requested, application.currency)
-            },
-            {
-              tabLabel: 'Submission_Date',
-              value: new Date(application.created_at).toLocaleDateString()
-            }
-          ]
+      // Create template roles for both signers
+      const templateRoles = [
+        // Applicant (Signer 1)
+        {
+          email: application.user_email || '',
+          name: `${application.first_name} ${application.last_name}`,
+          roleName: 'Signer 1',
+          routingOrder: 1,
+          tabs: {
+            textTabs: [
+              {
+                tabLabel: 'Project_Title',
+                value: application.title
+              },
+              {
+                tabLabel: 'Project_Description',
+                value: application.description
+              },
+              {
+                tabLabel: 'Amount_Requested',
+                value: formatAmount(application.amount_requested, application.currency)
+              },
+              {
+                tabLabel: 'Submission_Date',
+                value: new Date(application.created_at).toLocaleDateString()
+              }
+            ]
+          }
+        },
+        // Admin (Signer 2)
+        {
+          email: user.email || '',
+          name: user.user_metadata?.full_name || user.email || '',
+          roleName: 'Admin',
+          routingOrder: 2
         }
-      };
+      ];
 
-      // Log the template role for debugging
-      console.log('Template role:', templateRole);
+      // Log the template roles for debugging
+      console.log('Template roles:', templateRoles);
 
       // Send for signature using DocuSign template
       await docuSignService.sendDocumentForSignature({
@@ -225,7 +236,7 @@ export function ApplicationDetails() {
         documentName: `${application.title} - Grant Agreement`,
         applicationId: id,
         templateId: import.meta.env.VITE_DOCUSIGN_TEMPLATE_ID,
-        templateRoles: [templateRole]
+        templateRoles: templateRoles
       });
 
       // Update application status
