@@ -700,52 +700,46 @@ export function ApplicationDetails() {
                   </div>
                 )}
 
-                {(isAdmin || application.status === 'signed') && application.envelope_id && (
+                {/* Document and Payment Details Section - Combined in one line */}
+                {(isAdmin || application.status === 'signed' || application.has_submitted_payment_details) && (
                   <div className="sm:col-span-2">
-                    <dt className="text-sm font-medium text-gray-500 flex items-center">
-                      <FileSignature className="h-4 w-4 mr-1" />
-                      {application.status === 'signed' ? 'Signed Document' : 'Document'}
-                    </dt>
-                    <dd className="mt-1">
-                      <button
-                        onClick={handleViewDocument}
-                        disabled={loadingDocument}
-                        className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        {loadingDocument ? 'Loading...' : application.status === 'signed' ? 'View Signed Document' : 'View Document'}
-                      </button>
-                      {documentError && (
-                        <p className="mt-2 text-sm text-red-600">{documentError}</p>
-                      )}
-                    </dd>
-                  </div>
-                )}
-
-                {/* Payment Details Section - Visible to both owner and admin */}
-                {(isOwner || isAdmin) && application.status === 'signed' && (
-                  <div className="sm:col-span-2">
-                    <dt className="text-sm font-medium text-gray-500">Payment Details</dt>
-                    <dd className="mt-1">
-                      {application.has_submitted_payment_details ? (
+                    <dt className="text-sm font-medium text-gray-500 mb-2">Actions</dt>
+                    <dd className="flex items-center space-x-4">
+                      {(isAdmin || application.status === 'signed') && application.envelope_id && (
                         <button
-                          onClick={() => setShowPaymentDetails(true)}
+                          onClick={handleViewDocument}
+                          disabled={loadingDocument}
                           className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                         >
                           <Eye className="h-4 w-4 mr-2" />
-                          View Payment Details
+                          {loadingDocument ? 'Loading...' : application.status === 'signed' ? 'View Signed Document' : 'View Document'}
                         </button>
-                      ) : isOwner ? (
-                        <button
-                          onClick={() => setShowPaymentForm(true)}
-                          className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                        >
-                          Submit Payment Details
-                        </button>
-                      ) : (
-                        <span className="text-sm text-gray-500 italic">Payment details not submitted yet</span>
+                      )}
+                      
+                      {(isOwner || isAdmin) && application.status === 'signed' && (
+                        application.has_submitted_payment_details ? (
+                          <button
+                            onClick={() => setShowPaymentDetails(true)}
+                            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Payment Details
+                          </button>
+                        ) : isOwner ? (
+                          <button
+                            onClick={() => setShowPaymentForm(true)}
+                            className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          >
+                            Submit Payment Details
+                          </button>
+                        ) : (
+                          <span className="text-sm text-gray-500 italic">Payment details not submitted yet</span>
+                        )
                       )}
                     </dd>
+                    {documentError && (
+                      <p className="mt-2 text-sm text-red-600">{documentError}</p>
+                    )}
                   </div>
                 )}
 
