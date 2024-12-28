@@ -199,7 +199,7 @@ app.post('/api/docusign/envelopes', async (req, res) => {
         .from('applications')
         .update({
           envelope_id: data.envelopeId,
-          status: 'pending_signature'
+          status: 'pending_signature_applicant'
         })
         .eq('id', applicationId)
         .select();
@@ -212,7 +212,7 @@ app.post('/api/docusign/envelopes', async (req, res) => {
           id: applicationId,
           updates: {
             envelope_id: data.envelopeId,
-            status: 'pending_signature'
+            status: 'pending_signature_applicant'
           }
         }
       });
@@ -270,7 +270,7 @@ app.post('/api/docusign/connect', async (req, res) => {
     console.log('Recipient ID:', recipientId);
 
     // Query Supabase for the application
-    const { data: applications, error: queryError } = await supabase
+    const { data: application, error: queryError } = await supabase
       .from('applications')
       .select('id, status, envelope_id')
       .eq('envelope_id', envelopeId)
@@ -281,7 +281,7 @@ app.post('/api/docusign/connect', async (req, res) => {
       throw new Error(`Database query failed: ${queryError.message}`);
     }
 
-    if (!applications) {
+    if (!application) {
       console.warn('No matching application found for envelope:', envelopeId);
       return res.status(404).json({
         warning: 'Application not found',
@@ -295,9 +295,11 @@ app.post('/api/docusign/connect', async (req, res) => {
       let newStatus;
       
       // Determine new status based on recipient and current status
-      if (recipientId === '1') { // Applicant signed
+      if (recipientId === '1' && application.status === 'pending_signature_applicant') {
+        // Applicant has signed, waiting for admin
         newStatus = 'pending_signature_admin';
-      } else if (recipientId === '2') { // Admin signed
+      } else if (recipientId === '2' && application.status === 'pending_signature_admin') {
+        // Admin has signed, agreement is complete
         newStatus = 'signed';
       }
 
@@ -308,7 +310,7 @@ app.post('/api/docusign/connect', async (req, res) => {
             status: newStatus,
             updated_at: new Date().toISOString()
           })
-          .eq('id', applications.id);
+          .eq('id', application.id);
 
         if (updateError) {
           console.error('Status Update Error:', updateError);
@@ -326,7 +328,7 @@ app.post('/api/docusign/connect', async (req, res) => {
           status: 'terminated',
           updated_at: new Date().toISOString()
         })
-        .eq('id', applications.id);
+        .eq('id', application.id);
 
       if (updateError) {
         console.error('Status Update Error:', updateError);
@@ -339,8 +341,9 @@ app.post('/api/docusign/connect', async (req, res) => {
     return res.status(200).json({
       message: 'Webhook processed successfully',
       envelopeId: envelopeId,
-      applicationId: applications.id,
+      applicationId: application.id,
       event: event,
+      newStatus: application.status,
       timestamp: new Date().toISOString()
     });
 
