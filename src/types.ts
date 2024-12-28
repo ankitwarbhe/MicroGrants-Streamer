@@ -40,6 +40,7 @@ export interface Application {
     ifsc_code: string;
     account_type: string;
     account_number: string;
+    upi_id: string;
   };
   has_submitted_payment_details?: boolean;
 } 

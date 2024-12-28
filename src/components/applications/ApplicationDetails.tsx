@@ -32,6 +32,7 @@ interface PaymentDetails {
   ifsc_code: string;
   account_type: string;
   account_number: string;
+  upi_id: string;
 }
 
 function formatAmount(amount: number, currency: string) {
@@ -70,7 +71,8 @@ export function ApplicationDetails() {
     bank_branch: '',
     ifsc_code: '',
     account_type: '',
-    account_number: ''
+    account_number: '',
+    upi_id: ''
   });
   const [submittingPayment, setSubmittingPayment] = useState(false);
 
@@ -799,6 +801,21 @@ export function ApplicationDetails() {
                     required
                     value={paymentDetails.account_number}
                     onChange={(e) => setPaymentDetails(prev => ({ ...prev, account_number: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="upi_id" className="block text-sm font-medium text-gray-700">
+                    UPI ID <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="upi_id"
+                    name="upi_id"
+                    required
+                    placeholder="example@upi"
+                    value={paymentDetails.upi_id}
+                    onChange={(e) => setPaymentDetails(prev => ({ ...prev, upi_id: e.target.value }))}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   />
                 </div>
