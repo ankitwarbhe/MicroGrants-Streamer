@@ -14,7 +14,7 @@ export function ApplicationForm() {
 
   // Character limits
   const LIMITS = {
-    title: 70,
+    title: 50,
     description: 2000,
     first_name: 20,
     last_name: 20

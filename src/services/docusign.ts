@@ -99,20 +99,26 @@ async function findAuthServer(startPort: number = 3001, maxPort: number = 3010):
   throw new Error('Could not find running authentication server');
 }
 
+// Helper function to create email subject
+function createEmailSubject(title: string): string {
+  const prefix = 'Please sign the grant agreement for: ';
+  const maxTitleLength = 100 - prefix.length - 3; // 3 characters for ellipsis
+  const cleanTitle = title.replace(' - Grant Agreement.pdf', '').replace(' - Grant Agreement', '');
+  
+  if (cleanTitle.length > maxTitleLength) {
+    return `${prefix}${cleanTitle.substring(0, maxTitleLength)}...`;
+  }
+  return `${prefix}${cleanTitle}`;
+}
+
 export class DocuSignService {
-  private authServerUrl: string | null = null;
+  private authServerUrl: string = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
   constructor() {
     console.log('Initializing DocuSign service...');
   }
 
   async getAuthServerUrl(): Promise<string> {
-    if (this.authServerUrl) {
-      return this.authServerUrl;
-    }
-
-    // Use environment variable for server URL
-    this.authServerUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
     return this.authServerUrl;
   }
 
@@ -167,10 +173,10 @@ export class DocuSignService {
               roleName: 'signer'
             }],
             status: 'sent',
-            emailSubject: `Please sign the grant agreement for: ${documentName.replace(' - Grant Agreement.pdf', '')}`
+            emailSubject: createEmailSubject(documentName)
           } : {
             // Document-based envelope
-            emailSubject: `Please sign the grant agreement for: ${documentName.replace(' - Grant Agreement.pdf', '')}`,
+            emailSubject: createEmailSubject(documentName),
             documents: [{
               documentBase64: documentPath,
               name: documentName,
