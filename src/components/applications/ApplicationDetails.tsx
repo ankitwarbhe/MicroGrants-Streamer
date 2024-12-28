@@ -638,11 +638,11 @@ export function ApplicationDetails() {
                   </div>
                 )}
 
-                {application.status === 'signed' && application.envelope_id && (
+                {isAdmin && application.envelope_id && (
                   <div className="sm:col-span-2">
                     <dt className="text-sm font-medium text-gray-500 flex items-center">
                       <FileSignature className="h-4 w-4 mr-1" />
-                      Signed Document
+                      Document
                     </dt>
                     <dd className="mt-1">
                       <button
@@ -651,7 +651,7 @@ export function ApplicationDetails() {
                         className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                       >
                         <Download className="h-4 w-4 mr-2" />
-                        {loadingDocument ? 'Downloading...' : 'Download Signed Document'}
+                        {loadingDocument ? 'Downloading...' : 'Download Document'}
                       </button>
                       {documentError && (
                         <p className="mt-2 text-sm text-red-600">{documentError}</p>
