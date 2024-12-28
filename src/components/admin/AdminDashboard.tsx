@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import type { Application } from '../../types';
+import type { Application, DisbursementStep } from '../../types';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, DollarSign, ChevronLeft, ChevronRight, PenTool, FileSignature } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
@@ -20,6 +20,23 @@ const STATUS_BADGES = {
 function formatAmount(amount: number, currency: string) {
   const symbol = CURRENCY_SYMBOLS[currency as keyof typeof CURRENCY_SYMBOLS] || currency;
   return `${symbol}${amount.toLocaleString()}`;
+}
+
+// Add this function to get the latest disbursement status
+function getLatestDisbursementStatus(steps?: DisbursementStep[]) {
+  if (!steps?.length) return null;
+  
+  const completedSteps = steps.filter(step => step.status === 'completed').length;
+  const totalSteps = steps.length;
+  
+  if (completedSteps === totalSteps) {
+    return 'Completed';
+  }
+  
+  const currentStep = steps.find(step => step.status !== 'completed');
+  if (!currentStep) return null;
+  
+  return `${currentStep.label} (${currentStep.status})`;
 }
 
 export function AdminDashboard() {
@@ -263,22 +280,25 @@ export function AdminDashboard() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
                     Application
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
                     Applicant
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                     Amount
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                     Status
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                    Disbursement Status
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                     Date
                   </th>
-                  <th scope="col" className="relative px-6 py-3 w-24">
+                  <th scope="col" className="relative px-4 py-3 w-16">
                     <span className="sr-only">Actions</span>
                   </th>
                 </tr>
@@ -287,13 +307,14 @@ export function AdminDashboard() {
                 {applications.map((application) => {
                   const statusBadge = STATUS_BADGES[application.status] || STATUS_BADGES.draft;
                   const StatusIcon = statusBadge.icon;
+                  const disbursementStatus = getLatestDisbursementStatus(application.disbursement_steps);
                   return (
                     <tr key={application.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <div className="text-sm font-medium text-gray-900">{application.title}</div>
                         <div className="text-sm text-gray-500 line-clamp-2 max-w-lg">{application.description}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4">
                         <div className="text-sm text-gray-900">
                           {application.first_name} {application.last_name}
                         </div>
@@ -301,21 +322,32 @@ export function AdminDashboard() {
                           {application.user_email || 'Unknown'}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4">
                         <div className="text-sm text-gray-900">
                           {formatAmount(application.amount_requested, application.currency)}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.color}`}>
                           <StatusIcon className="mr-1 h-4 w-4" />
                           {application.status.replace('_', ' ').toUpperCase()}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 py-4">
+                        {disbursementStatus ? (
+                          <span className="text-sm text-gray-900 break-words">
+                            {disbursementStatus}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-500 italic">
+                            Not started
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-500">
                         {new Date(application.created_at).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-4 py-4 text-right text-sm font-medium">
                         <Link
                           to={`/applications/${application.id}`}
                           className="text-indigo-600 hover:text-indigo-900"
