@@ -210,3 +210,31 @@ export async function withdrawApplication(id: string) {
 
   return application;
 }
+
+export async function terminateApplication(id: string, feedback: string) {
+  if (!feedback) {
+    throw new Error('Feedback is required when terminating an application');
+  }
+
+  const { data: application, error } = await supabase
+    .from('applications')
+    .update({ 
+      status: 'terminated',
+      feedback: feedback 
+    })
+    .eq('id', id)
+    .eq('status', 'signed')
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('Error terminating application:', error);
+    throw new Error('Failed to terminate application. Please try again.');
+  }
+
+  if (!application) {
+    throw new Error('Application not found or not in signed state');
+  }
+
+  return application;
+}

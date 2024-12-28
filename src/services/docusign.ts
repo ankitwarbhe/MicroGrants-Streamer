@@ -264,6 +264,53 @@ export class DocuSignService {
       throw error;
     }
   }
+
+  async terminateEnvelope(envelopeId: string): Promise<void> {
+    try {
+      const authServerUrl = await this.getAuthServerUrl();
+
+      // First, get an access token
+      const authResponse = await fetch(`${authServerUrl}/api/docusign/auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          integrationKey: env.integrationKey,
+          userId: env.userId,
+          privateKey: env.privateKey
+        })
+      });
+
+      if (!authResponse.ok) {
+        const error = await authResponse.json();
+        throw new Error(error.message || 'Failed to authenticate');
+      }
+
+      const { access_token } = await authResponse.json();
+
+      // Void the envelope
+      const terminateResponse = await fetch(`${authServerUrl}/api/docusign/envelopes/${envelopeId}/void`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          accountId: env.accountId,
+          accessToken: access_token,
+          voidedReason: 'Agreement terminated by administrator'
+        })
+      });
+
+      if (!terminateResponse.ok) {
+        const error = await terminateResponse.json();
+        throw new Error(error.message || 'Failed to terminate envelope');
+      }
+    } catch (error) {
+      console.error('DocuSign error:', error);
+      throw error;
+    }
+  }
 }
 
 export const docuSignService = new DocuSignService(); 

@@ -4,7 +4,8 @@ export type ApplicationStatus =
   | 'approved'
   | 'rejected'
   | 'pending_signature'
-  | 'signed';
+  | 'signed'
+  | 'terminated';
 
 export interface Application {
   id: string;
