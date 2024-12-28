@@ -485,8 +485,7 @@ export function ApplicationDetails() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <dt className="text-sm font-medium text-gray-500 flex items-center">
-                      <DollarSign className="h-4 w-4 mr-1" />
+                    <dt className="text-sm font-medium text-gray-500">
                       Amount Requested
                     </dt>
                     <dd className="mt-1">
@@ -587,8 +586,7 @@ export function ApplicationDetails() {
                 </div>
 
                 <div>
-                  <dt className="text-sm font-medium text-gray-500 flex items-center">
-                    <DollarSign className="h-4 w-4 mr-1" />
+                  <dt className="text-sm font-medium text-gray-500">
                     Amount Requested
                   </dt>
                   <dd className="mt-1 text-sm text-gray-900">
