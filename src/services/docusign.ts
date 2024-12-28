@@ -289,8 +289,8 @@ export class DocuSignService {
 
       const { access_token } = await authResponse.json();
 
-      // Void the envelope
-      const terminateResponse = await fetch(`${authServerUrl}/api/docusign/envelopes/${envelopeId}/void`, {
+      // Update envelope status to voided
+      const terminateResponse = await fetch(`${authServerUrl}/api/docusign/envelopes/${envelopeId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -298,6 +298,7 @@ export class DocuSignService {
         body: JSON.stringify({
           accountId: env.accountId,
           accessToken: access_token,
+          status: 'voided',
           voidedReason: 'Agreement terminated by administrator'
         })
       });
