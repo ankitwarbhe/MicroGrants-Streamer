@@ -332,12 +332,19 @@ export class DocuSignService {
       }
 
       const { access_token } = await authResponse.json();
-      const urlResponse = await fetch(`${authServerUrl}/api/docusign/envelopes/${envelopeId}/view`, {
-        method: 'GET',
+      
+      // Get the console URL for the envelope
+      const urlResponse = await fetch(`${authServerUrl}/api/docusign/envelopes/${envelopeId}/console`, {
+        method: 'POST',
         headers: {
-          'Authorization': `Bearer ${access_token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          accountId: env.accountId,
+          accessToken: access_token,
+          envelopeId,
+          returnUrl: window.location.href // Return to the current page after viewing
+        })
       });
 
       if (!urlResponse.ok) {
