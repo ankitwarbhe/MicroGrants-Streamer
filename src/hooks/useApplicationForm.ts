@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createApplication } from '../services/applications';
+import type { Currency } from '../types';
 
 interface FormData {
   title: string;
@@ -8,6 +9,7 @@ interface FormData {
   amount_requested: string;
   first_name: string;
   last_name: string;
+  currency: Currency;
 }
 
 const initialFormData: FormData = {
@@ -16,6 +18,7 @@ const initialFormData: FormData = {
   amount_requested: '',
   first_name: '',
   last_name: '',
+  currency: 'USD',
 };
 
 export function useApplicationForm() {
@@ -24,7 +27,7 @@ export function useApplicationForm() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };

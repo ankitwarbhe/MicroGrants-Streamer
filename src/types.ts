@@ -6,6 +6,19 @@ export type ApplicationStatus =
   | 'pending_signature'
   | 'signed';
 
+export type Currency = 'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'JPY' | 'CNY' | 'INR';
+
+export const CURRENCY_SYMBOLS: Record<Currency, string> = {
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  CAD: 'C$',
+  AUD: 'A$',
+  JPY: '¥',
+  CNY: '¥',
+  INR: '₹'
+};
+
 export interface Application {
   id: string;
   user_id: string;
@@ -15,6 +28,7 @@ export interface Application {
   title: string;
   description: string;
   amount_requested: number;
+  currency: Currency;
   status: ApplicationStatus;
   feedback?: string;
   created_at: string;

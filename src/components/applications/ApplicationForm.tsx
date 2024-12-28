@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApplicationForm } from '../../hooks/useApplicationForm';
 import { Info } from 'lucide-react';
+import { CURRENCY_SYMBOLS, type Currency } from '../../types';
 
 export function ApplicationForm() {
   const { 
@@ -99,37 +100,59 @@ export function ApplicationForm() {
         />
       </div>
 
-      <div>
-        <div className="flex items-center justify-between gap-2">
-          <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
-            Amount Requested ($)
-          </label>
-          <div className="group relative">
-            <Info className="h-4 w-4 text-gray-400 hover:text-gray-500 cursor-help" />
-            <div className="invisible group-hover:visible absolute left-0 top-6 w-72 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
-              <p className="font-medium mb-1">Consider all costs including:</p>
-              <ul className="list-disc pl-4 space-y-1">
-                <li>Development or implementation costs</li>
-                <li>Equipment or materials</li>
-                <li>Operating expenses</li>
-                <li>Marketing or outreach costs</li>
-                <li>Other project-related expenses</li>
-              </ul>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor="amount_requested" className="block text-sm font-medium text-gray-700">
+              Amount Requested
+            </label>
+            <div className="group relative">
+              <Info className="h-4 w-4 text-gray-400 hover:text-gray-500 cursor-help" />
+              <div className="invisible group-hover:visible absolute left-0 top-6 w-72 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
+                <p className="font-medium mb-1">Consider all costs including:</p>
+                <ul className="list-disc pl-4 space-y-1">
+                  <li>Development or implementation costs</li>
+                  <li>Equipment or materials</li>
+                  <li>Operating expenses</li>
+                  <li>Marketing or outreach costs</li>
+                  <li>Other project-related expenses</li>
+                </ul>
+              </div>
             </div>
           </div>
+          <input
+            type="number"
+            id="amount_requested"
+            name="amount_requested"
+            value={formData.amount_requested}
+            onChange={handleChange}
+            required
+            min="0"
+            step="0.01"
+            placeholder="Enter amount"
+            className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 hover:border-gray-400"
+          />
         </div>
-        <input
-          type="number"
-          id="amount"
-          name="amount_requested"
-          value={formData.amount_requested}
-          onChange={handleChange}
-          required
-          min="0"
-          step="0.01"
-          placeholder="Example: 5000.00"
-          className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 hover:border-gray-400"
-        />
+
+        <div>
+          <label htmlFor="currency" className="block text-sm font-medium text-gray-700">
+            Currency
+          </label>
+          <select
+            id="currency"
+            name="currency"
+            value={formData.currency}
+            onChange={handleChange}
+            required
+            className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 hover:border-gray-400"
+          >
+            {Object.entries(CURRENCY_SYMBOLS).map(([code, symbol]) => (
+              <option key={code} value={code}>
+                {code} ({symbol})
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div>

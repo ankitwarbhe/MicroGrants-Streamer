@@ -5,6 +5,7 @@ import type { Application } from '../../types';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, DollarSign, ChevronLeft, ChevronRight, PenTool, FileSignature } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
+import { CURRENCY_SYMBOLS } from '../../types';
 
 const STATUS_BADGES = {
   draft: { color: 'bg-gray-100 text-gray-800', icon: Clock },
@@ -14,6 +15,12 @@ const STATUS_BADGES = {
   pending_signature: { color: 'bg-purple-100 text-purple-800', icon: PenTool },
   signed: { color: 'bg-emerald-100 text-emerald-800', icon: FileSignature }
 };
+
+// Add formatAmount helper function
+function formatAmount(amount: number, currency: string) {
+  const symbol = CURRENCY_SYMBOLS[currency as keyof typeof CURRENCY_SYMBOLS] || currency;
+  return `${symbol}${amount.toLocaleString()}`;
+}
 
 export function AdminDashboard() {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -296,7 +303,7 @@ export function AdminDashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          ${application.amount_requested.toLocaleString()}
+                          {formatAmount(application.amount_requested, application.currency)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

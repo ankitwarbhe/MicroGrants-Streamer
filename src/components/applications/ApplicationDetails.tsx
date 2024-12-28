@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication, withdrawApplication } from '../../services/applications';
 import { docuSignService } from '../../services/docusign.ts';
-import type { Application } from '../../types';
+import type { Application, Currency } from '../../types';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download, Undo } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
+import { CURRENCY_SYMBOLS } from '../../types';
 
 const STATUS_BADGES = {
   draft: { color: 'bg-gray-100 text-gray-800', icon: Clock },
@@ -22,6 +23,12 @@ interface EditedData {
   amount_requested: number;
   first_name: string;
   last_name: string;
+  currency: Currency;
+}
+
+function formatAmount(amount: number, currency: string) {
+  const symbol = CURRENCY_SYMBOLS[currency as keyof typeof CURRENCY_SYMBOLS] || currency;
+  return `${symbol}${amount.toLocaleString()}`;
 }
 
 export function ApplicationDetails() {
@@ -36,7 +43,8 @@ export function ApplicationDetails() {
     description: '',
     amount_requested: 0,
     first_name: '',
-    last_name: ''
+    last_name: '',
+    currency: 'USD'
   });
   const [updateLoading, setUpdateLoading] = useState(false);
   const [feedback, setFeedback] = useState('');
@@ -61,7 +69,8 @@ export function ApplicationDetails() {
           description: data.description,
           amount_requested: data.amount_requested,
           first_name: data.first_name,
-          last_name: data.last_name
+          last_name: data.last_name,
+          currency: data.currency
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load application details');
@@ -80,7 +89,8 @@ export function ApplicationDetails() {
         description: application.description,
         amount_requested: application.amount_requested,
         first_name: application.first_name,
-        last_name: application.last_name
+        last_name: application.last_name,
+        currency: application.currency
       });
     }
   }, [application]);
@@ -96,13 +106,14 @@ export function ApplicationDetails() {
         description: application.description,
         amount_requested: application.amount_requested,
         first_name: application.first_name,
-        last_name: application.last_name
+        last_name: application.last_name,
+        currency: application.currency
       });
     }
     setIsEditing(false);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setEditedData(prev => ({
       ...prev,
@@ -194,7 +205,7 @@ export function ApplicationDetails() {
             },
             {
               tabLabel: 'Amount_Requested',
-              value: `$${application.amount_requested.toLocaleString()}`
+              value: formatAmount(application.amount_requested, application.currency)
             },
             {
               tabLabel: 'Submission_Date',
@@ -472,23 +483,43 @@ export function ApplicationDetails() {
                   </dd>
                 </div>
 
-                <div>
-                  <dt className="text-sm font-medium text-gray-500 flex items-center">
-                    <DollarSign className="h-4 w-4 mr-1" />
-                    Amount Requested
-                  </dt>
-                  <dd className="mt-1">
-                    <input
-                      type="number"
-                      name="amount_requested"
-                      value={editedData.amount_requested}
-                      onChange={handleChange}
-                      required
-                      min="0"
-                      step="0.01"
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                  </dd>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 flex items-center">
+                      <DollarSign className="h-4 w-4 mr-1" />
+                      Amount Requested
+                    </dt>
+                    <dd className="mt-1">
+                      <input
+                        type="number"
+                        name="amount_requested"
+                        value={editedData.amount_requested}
+                        onChange={handleChange}
+                        required
+                        min="0"
+                        step="0.01"
+                        className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      />
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Currency</dt>
+                    <dd className="mt-1">
+                      <select
+                        name="currency"
+                        value={editedData.currency}
+                        onChange={handleChange}
+                        required
+                        className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      >
+                        {Object.entries(CURRENCY_SYMBOLS).map(([code, symbol]) => (
+                          <option key={code} value={code}>
+                            {code} ({symbol})
+                          </option>
+                        ))}
+                      </select>
+                    </dd>
+                  </div>
                 </div>
 
                 <div className="sm:col-span-2 grid grid-cols-2 gap-4">
@@ -561,7 +592,7 @@ export function ApplicationDetails() {
                     Amount Requested
                   </dt>
                   <dd className="mt-1 text-sm text-gray-900">
-                    ${application.amount_requested.toLocaleString()}
+                    {formatAmount(application.amount_requested, application.currency)}
                   </dd>
                 </div>
 
