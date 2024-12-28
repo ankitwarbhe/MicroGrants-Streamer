@@ -66,6 +66,7 @@ export function ApplicationDetails() {
   const [showPdfViewer, setShowPdfViewer] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>({
     beneficiary_name: '',
     bank_branch: '',
@@ -75,6 +76,8 @@ export function ApplicationDetails() {
     upi_id: ''
   });
   const [submittingPayment, setSubmittingPayment] = useState(false);
+  const [upiError, setUpiError] = useState<string>('');
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
 
   const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
   const isOwner = application?.user_id === user?.id;
@@ -326,6 +329,20 @@ export function ApplicationDetails() {
     e.preventDefault();
     if (!id || !application) return;
 
+    // Validate UPI ID
+    if (!paymentDetails.upi_id.includes('@')) {
+      setUpiError('UPI ID must contain @ symbol');
+      return;
+    }
+    setUpiError('');
+
+    // Show confirmation popup instead of submitting directly
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    if (!id || !application) return;
+    
     setSubmittingPayment(true);
     try {
       const updated = await updateApplication(id, {
@@ -335,6 +352,7 @@ export function ApplicationDetails() {
       });
       setApplication(updated);
       setShowPaymentForm(false);
+      setShowConfirmation(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save payment details');
     } finally {
@@ -703,16 +721,26 @@ export function ApplicationDetails() {
                   </div>
                 )}
 
-                {isOwner && application.status === 'signed' && !application.has_submitted_payment_details && (
+                {isOwner && application.status === 'signed' && (
                   <div className="sm:col-span-2">
                     <dt className="text-sm font-medium text-gray-500">Payment Details</dt>
                     <dd className="mt-1">
-                      <button
-                        onClick={() => setShowPaymentForm(true)}
-                        className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                      >
-                        Submit Payment Details
-                      </button>
+                      {application.has_submitted_payment_details ? (
+                        <button
+                          onClick={() => setShowPaymentDetails(true)}
+                          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Payment Details
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setShowPaymentForm(true)}
+                          className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        >
+                          Submit Payment Details
+                        </button>
+                      )}
                     </dd>
                   </div>
                 )}
@@ -740,6 +768,7 @@ export function ApplicationDetails() {
                     id="beneficiary_name"
                     name="beneficiary_name"
                     required
+                    placeholder="Enter full name as per bank account"
                     value={paymentDetails.beneficiary_name}
                     onChange={(e) => setPaymentDetails(prev => ({ ...prev, beneficiary_name: e.target.value }))}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -754,6 +783,7 @@ export function ApplicationDetails() {
                     id="bank_branch"
                     name="bank_branch"
                     required
+                    placeholder="Enter complete branch name"
                     value={paymentDetails.bank_branch}
                     onChange={(e) => setPaymentDetails(prev => ({ ...prev, bank_branch: e.target.value }))}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -768,6 +798,7 @@ export function ApplicationDetails() {
                     id="ifsc_code"
                     name="ifsc_code"
                     required
+                    placeholder="11-character IFSC code (e.g., SBIN0001234)"
                     value={paymentDetails.ifsc_code}
                     onChange={(e) => setPaymentDetails(prev => ({ ...prev, ifsc_code: e.target.value.toUpperCase() }))}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -785,7 +816,7 @@ export function ApplicationDetails() {
                     onChange={(e) => setPaymentDetails(prev => ({ ...prev, account_type: e.target.value }))}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   >
-                    <option value="">Select Account Type</option>
+                    <option value="">Select your bank account type</option>
                     <option value="savings">Savings</option>
                     <option value="current">Current</option>
                   </select>
@@ -799,6 +830,7 @@ export function ApplicationDetails() {
                     id="account_number"
                     name="account_number"
                     required
+                    placeholder="Enter your bank account number"
                     value={paymentDetails.account_number}
                     onChange={(e) => setPaymentDetails(prev => ({ ...prev, account_number: e.target.value }))}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -813,11 +845,23 @@ export function ApplicationDetails() {
                     id="upi_id"
                     name="upi_id"
                     required
-                    placeholder="example@upi"
+                    placeholder="Enter your UPI ID (e.g., name@bank)"
                     value={paymentDetails.upi_id}
-                    onChange={(e) => setPaymentDetails(prev => ({ ...prev, upi_id: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    onChange={(e) => {
+                      setPaymentDetails(prev => ({ ...prev, upi_id: e.target.value }));
+                      if (!e.target.value.includes('@') && e.target.value.length > 0) {
+                        setUpiError('UPI ID must contain @ symbol');
+                      } else {
+                        setUpiError('');
+                      }
+                    }}
+                    className={`mt-1 block w-full rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                      upiError ? 'border-red-300' : 'border-gray-300'
+                    }`}
                   />
+                  {upiError && (
+                    <p className="mt-1 text-sm text-red-600">{upiError}</p>
+                  )}
                 </div>
               </div>
               <div className="mt-5 flex justify-end space-x-3">
@@ -837,6 +881,138 @@ export function ApplicationDetails() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Payment Details Modal */}
+      {showPaymentDetails && application?.payment_details && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg w-full max-w-lg">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-medium">Payment Details</h3>
+              <button
+                onClick={() => setShowPaymentDetails(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Beneficiary Name
+                </label>
+                <div className="mt-1 p-2 bg-gray-50 rounded-md text-sm text-gray-900">
+                  {application.payment_details.beneficiary_name}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Bank Branch Name
+                </label>
+                <div className="mt-1 p-2 bg-gray-50 rounded-md text-sm text-gray-900">
+                  {application.payment_details.bank_branch}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  IFSC Code
+                </label>
+                <div className="mt-1 p-2 bg-gray-50 rounded-md text-sm text-gray-900">
+                  {application.payment_details.ifsc_code}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Account Type
+                </label>
+                <div className="mt-1 p-2 bg-gray-50 rounded-md text-sm text-gray-900 capitalize">
+                  {application.payment_details.account_type}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Account Number
+                </label>
+                <div className="mt-1 p-2 bg-gray-50 rounded-md text-sm text-gray-900">
+                  {application.payment_details.account_number}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  UPI ID
+                </label>
+                <div className="mt-1 p-2 bg-gray-50 rounded-md text-sm text-gray-900">
+                  {application.payment_details.upi_id}
+                </div>
+              </div>
+            </div>
+            <div className="p-4 border-t flex justify-end">
+              <button
+                onClick={() => setShowPaymentDetails(false)}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-lg w-full max-w-md">
+            <div className="p-4 border-b">
+              <h3 className="text-lg font-medium text-gray-900">Confirm Payment Details</h3>
+            </div>
+            <div className="p-4">
+              <p className="text-sm text-gray-500">
+                Please confirm your payment details. Once submitted, you won't be able to modify these details later.
+              </p>
+              <div className="mt-4 space-y-2">
+                <div className="text-sm">
+                  <span className="font-medium text-gray-700">Beneficiary Name:</span>{' '}
+                  {paymentDetails.beneficiary_name}
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium text-gray-700">Bank Branch:</span>{' '}
+                  {paymentDetails.bank_branch}
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium text-gray-700">IFSC Code:</span>{' '}
+                  {paymentDetails.ifsc_code}
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium text-gray-700">Account Type:</span>{' '}
+                  {paymentDetails.account_type}
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium text-gray-700">Account Number:</span>{' '}
+                  {paymentDetails.account_number}
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium text-gray-700">UPI ID:</span>{' '}
+                  {paymentDetails.upi_id}
+                </div>
+              </div>
+            </div>
+            <div className="p-4 border-t flex justify-end space-x-3">
+              <button
+                onClick={() => setShowConfirmation(false)}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Back to Edit
+              </button>
+              <button
+                onClick={handleConfirmSubmit}
+                disabled={submittingPayment}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                {submittingPayment ? 'Submitting...' : 'Confirm & Submit'}
+              </button>
+            </div>
           </div>
         </div>
       )}
