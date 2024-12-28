@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication, withdrawApplication, terminateApplication } from '../../services/applications';
+import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication, withdrawApplication } from '../../services/applications';
 import { docuSignService } from '../../services/docusign.ts';
 import type { Application } from '../../types';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download, Undo } from 'lucide-react';
@@ -13,8 +13,7 @@ const STATUS_BADGES = {
   approved: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
   rejected: { color: 'bg-red-100 text-red-800', icon: XCircle },
   pending_signature: { color: 'bg-purple-100 text-purple-800', icon: PenTool },
-  signed: { color: 'bg-emerald-100 text-emerald-800', icon: FileSignature },
-  terminated: { color: 'bg-gray-100 text-gray-800', icon: XCircle }
+  signed: { color: 'bg-emerald-100 text-emerald-800', icon: FileSignature }
 };
 
 interface EditedData {
@@ -278,25 +277,6 @@ export function ApplicationDetails() {
     }
   };
 
-  const handleTerminate = async () => {
-    if (!id || !application?.envelope_id || !feedback.trim()) return;
-    setUpdateLoading(true);
-    try {
-      // First void the DocuSign envelope
-      await docuSignService.terminateEnvelope(application.envelope_id);
-      
-      // Then update the application status
-      const updated = await terminateApplication(id, feedback);
-      setApplication(updated);
-      setShowFeedbackModal(false);
-      setFeedback('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to terminate application');
-    } finally {
-      setUpdateLoading(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="text-center py-4">
@@ -404,16 +384,6 @@ export function ApplicationDetails() {
               Send for Signature
             </button>
           )}
-          {isAdmin && application?.status === 'signed' && (
-            <button
-              onClick={() => openFeedbackModal('reject')}
-              disabled={updateLoading}
-              className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Terminate Agreement
-            </button>
-          )}
           <div className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${statusBadge.color}`}>
             <StatusIcon className="mr-2 h-5 w-5" />
             {application.status.replace('_', ' ').toUpperCase()}
@@ -425,12 +395,11 @@ export function ApplicationDetails() {
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
-              {actionType === 'approve' ? 'Approve Application' : 
-               actionType === 'reject' && application?.status === 'signed' ? 'Terminate Agreement' : 'Reject Application'}
+              {actionType === 'approve' ? 'Approve Application' : 'Reject Application'}
             </h3>
             <div className="mb-4">
               <label htmlFor="feedback" className="block text-sm font-medium text-gray-700 mb-2">
-                Feedback <span className="text-red-500">*</span>
+                Feedback {actionType === 'reject' && <span className="text-red-500">*</span>}
               </label>
               <textarea
                 id="feedback"
@@ -438,7 +407,7 @@ export function ApplicationDetails() {
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value)}
-                placeholder={actionType === 'approve' ? 'Optional feedback for approval' : 'Required feedback for rejection/termination'}
+                placeholder={actionType === 'approve' ? 'Optional feedback for approval' : 'Required feedback for rejection'}
                 required={actionType === 'reject'}
               />
             </div>
@@ -455,9 +424,8 @@ export function ApplicationDetails() {
               </button>
               <button
                 type="button"
-                onClick={actionType === 'approve' ? handleApprove : 
-                        application?.status === 'signed' ? handleTerminate : handleReject}
-                disabled={!feedback.trim()}
+                onClick={actionType === 'approve' ? handleApprove : handleReject}
+                disabled={actionType === 'reject' && !feedback.trim()}
                 className={`inline-flex justify-center px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                   actionType === 'approve'
                     ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
@@ -468,8 +436,6 @@ export function ApplicationDetails() {
                   ? 'Processing...'
                   : actionType === 'approve'
                   ? 'Approve'
-                  : application?.status === 'signed'
-                  ? 'Terminate'
                   : 'Reject'}
               </button>
             </div>
