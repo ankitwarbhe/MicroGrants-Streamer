@@ -13,14 +13,6 @@ interface SignatureRequest {
     roleName: string;
     tabs?: Record<string, any>;
   }[];
-  customFields?: {
-    textCustomFields: {
-      name: string;
-      value: string;
-      required: string;
-      show: string;
-    }[];
-  };
 }
 
 interface DocuSignError {
@@ -137,8 +129,7 @@ export class DocuSignService {
     documentName = 'Document for Signature',
     applicationId,
     templateId,
-    templateRoles,
-    customFields
+    templateRoles
   }: SignatureRequest) {
     try {
       const authServerUrl = await this.getAuthServerUrl();
@@ -173,7 +164,8 @@ export class DocuSignService {
           accountId: env.accountId,
           accessToken: access_token,
           applicationId,
-          envelope: {
+          envelope: templateId ? {
+            // Template-based envelope - simpler structure
             templateId,
             emailSubject: createEmailSubject(documentName),
             status: 'sent',
@@ -181,10 +173,32 @@ export class DocuSignService {
               email: signerEmail,
               name: signerName,
               roleName: 'signer'
+            }]
+          } : {
+            // Document-based envelope - includes document data
+            emailSubject: createEmailSubject(documentName),
+            documents: [{
+              documentBase64: documentPath,
+              name: documentName,
+              fileExtension: 'pdf',
+              documentId: '1'
             }],
-            customFields: customFields || {
-              textCustomFields: []
-            }
+            recipients: {
+              signers: [{
+                email: signerEmail,
+                name: signerName,
+                recipientId: '1',
+                tabs: {
+                  signHereTabs: [{
+                    anchorString: '/sig1/',
+                    anchorUnits: 'pixels',
+                    anchorXOffset: '0',
+                    anchorYOffset: '0'
+                  }]
+                }
+              }]
+            },
+            status: 'sent'
           }
         })
       });

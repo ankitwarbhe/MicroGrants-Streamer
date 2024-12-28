@@ -177,40 +177,40 @@ export function ApplicationDetails() {
       // Log the application data for debugging
       console.log('Application data:', application);
 
-      // Send for signature using DocuSign template with custom fields
+      const templateRole = {
+        email: application.user_email || '',
+        name: `${application.first_name} ${application.last_name}`,
+        roleName: 'Signer 1',
+        tabs: {
+          // Text tabs for custom fields
+          textTabs: [
+            {
+              tabLabel: 'Project_Title',
+              value: application.title
+            },
+            {
+              tabLabel: 'Project_Description',
+              value: application.description
+            },
+            {
+              tabLabel: 'Amount_Requested',
+              value: `$${application.amount_requested.toLocaleString()}`
+            }
+          ]
+        }
+      };
+
+      // Log the template role for debugging
+      console.log('Template role:', templateRole);
+
+      // Send for signature using DocuSign template
       await docuSignService.sendDocumentForSignature({
         signerEmail: application.user_email || '',
         signerName: `${application.first_name} ${application.last_name}`,
         documentName: `${application.title} - Grant Agreement`,
         applicationId: id,
         templateId: import.meta.env.VITE_DOCUSIGN_TEMPLATE_ID,
-        templateRoles: [{
-          email: application.user_email || '',
-          name: `${application.first_name} ${application.last_name}`,
-          roleName: 'Signer 1'
-        }],
-        customFields: {
-          textCustomFields: [
-            {
-              name: 'Project_Title',
-              required: 'false',
-              show: 'true',
-              value: application.title
-            },
-            {
-              name: 'Project_Description',
-              required: 'false',
-              show: 'true',
-              value: application.description
-            },
-            {
-              name: 'Amount_Requested',
-              required: 'false',
-              show: 'true',
-              value: `$${application.amount_requested.toLocaleString()}`
-            }
-          ]
-        }
+        templateRoles: [templateRole]
       });
 
       // Update application status
