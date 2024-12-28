@@ -264,47 +264,40 @@ export class DocuSignService {
   async getSignedDocument(envelopeId: string): Promise<string> {
     try {
       const authServerUrl = await this.getAuthServerUrl();
-
-      // First, get an access token
-      const authResponse = await fetch(`${authServerUrl}/api/docusign/auth`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          integrationKey: env.integrationKey,
-          userId: env.userId,
-          privateKey: env.privateKey
-        })
+      const response = await fetch(`${authServerUrl}/api/docusign/envelopes/${envelopeId}/documents/combined`, {
+        method: 'GET'
       });
 
-      if (!authResponse.ok) {
-        const error = await authResponse.json();
-        throw new Error(error.message || 'Failed to authenticate');
-      }
-
-      const { access_token } = await authResponse.json();
-
-      // Get the signed document
-      const documentResponse = await fetch(`${authServerUrl}/api/docusign/documents`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          accountId: env.accountId,
-          accessToken: access_token,
-          envelopeId
-        })
-      });
-
-      if (!documentResponse.ok) {
-        const error = await documentResponse.json();
+      if (!response.ok) {
+        const error = await response.json();
         throw new Error(error.message || 'Failed to get signed document');
       }
 
-      const { documentBase64 } = await documentResponse.json();
+      const { documentBase64 } = await response.json();
       return documentBase64;
+    } catch (error) {
+      console.error('DocuSign error:', error);
+      throw error;
+    }
+  }
+
+  async terminateEnvelope(envelopeId: string): Promise<void> {
+    try {
+      const authServerUrl = await this.getAuthServerUrl();
+      const response = await fetch(`${authServerUrl}/api/docusign/envelopes/${envelopeId}/void`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          voidedReason: 'Agreement terminated by administrator'
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to terminate envelope');
+      }
     } catch (error) {
       console.error('DocuSign error:', error);
       throw error;

@@ -249,42 +249,17 @@ app.post('/api/docusign/envelopes', async (req, res) => {
 // DocuSign Connect webhook endpoint
 app.post('/api/docusign/connect', async (req, res) => {
   try {
-    // Log raw request details
-    console.log('=== DocuSign Connect Webhook Received ===');
-    console.log('Request URL:', req.url);
-    console.log('Request Method:', req.method);
-    console.log('Request Headers:', JSON.stringify(req.headers, null, 2));
-    console.log('Request Body:', JSON.stringify(req.body, null, 2));
+    console.log('\n=== DocuSign Connect Webhook Received ===');
+    console.log('Request Body:', req.body);
 
-    // Parse and validate the data
-    const data = req.body;
-    console.log('\n=== Webhook Data Validation ===');
-    console.log('Has Body:', !!data);
-    console.log('Body Type:', typeof data);
-    
-    // Extract envelopeId from the correct location in the payload
-    const envelopeId = data?.data?.envelopeId || data?.envelopeId;
-    const event = data?.event;
-    
-    console.log('Event Type:', event);
-    console.log('EnvelopeId:', envelopeId);
-    
-    // Basic validation
-    if (!data) {
-      console.error('Error: Empty request body');
-      return res.status(400).json({
-        error: 'Invalid request',
-        message: 'Request body is empty',
-        timestamp: new Date().toISOString()
-      });
-    }
+    const envelopeId = req.body?.data?.envelopeId;
+    const event = req.body?.event;
+    const recipientId = req.body?.data?.recipientId;
 
     if (!envelopeId) {
-      console.error('Error: Missing envelopeId in payload:', data);
+      console.warn('No envelope ID in webhook');
       return res.status(400).json({
-        error: 'Invalid payload',
-        message: 'Missing required field: envelopeId',
-        receivedPayload: data,
+        error: 'Missing envelope ID',
         timestamp: new Date().toISOString()
       });
     }
@@ -292,49 +267,63 @@ app.post('/api/docusign/connect', async (req, res) => {
     console.log('\n=== Processing Envelope Status ===');
     console.log('Envelope ID:', envelopeId);
     console.log('Event:', event);
+    console.log('Recipient ID:', recipientId);
 
-    // Process completed envelopes
-    if (event === 'envelope-completed') {
-      console.log('\n=== Querying Supabase ===');
-      
-      // Query Supabase for the application
-      const { data: applications, error: queryError } = await supabase
-        .from('applications')
-        .select('id, status, envelope_id')
-        .eq('envelope_id', envelopeId)
-        .single();
+    // Query Supabase for the application
+    const { data: applications, error: queryError } = await supabase
+      .from('applications')
+      .select('id, status, envelope_id')
+      .eq('envelope_id', envelopeId)
+      .single();
 
-      // Log Supabase query results
-      console.log('Supabase Query Results:', {
-        success: !queryError,
-        error: queryError,
-        applicationFound: !!applications,
-        applicationData: applications
+    if (queryError) {
+      console.error('Supabase Query Error:', queryError);
+      throw new Error(`Database query failed: ${queryError.message}`);
+    }
+
+    if (!applications) {
+      console.warn('No matching application found for envelope:', envelopeId);
+      return res.status(404).json({
+        warning: 'Application not found',
+        envelopeId: envelopeId,
+        timestamp: new Date().toISOString()
       });
+    }
 
-      if (queryError) {
-        console.error('Supabase Query Error:', queryError);
-        throw new Error(`Database query failed: ${queryError.message}`);
-      }
-
-      if (!applications) {
-        console.warn('No matching application found for envelope:', envelopeId);
-        return res.status(404).json({
-          warning: 'Application not found',
-          envelopeId: envelopeId,
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      console.log('\n=== Updating Application Status ===');
-      console.log('Application ID:', applications.id);
-      console.log('Current Status:', applications.status);
+    // Handle different signature events
+    if (event === 'recipient-completed') {
+      let newStatus;
       
-      // Update application status
+      // Determine new status based on recipient and current status
+      if (recipientId === '1') { // Applicant signed
+        newStatus = 'pending_signature_admin';
+      } else if (recipientId === '2') { // Admin signed
+        newStatus = 'signed';
+      }
+
+      if (newStatus) {
+        const { error: updateError } = await supabase
+          .from('applications')
+          .update({ 
+            status: newStatus,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', applications.id);
+
+        if (updateError) {
+          console.error('Status Update Error:', updateError);
+          throw new Error(`Failed to update status: ${updateError.message}`);
+        }
+
+        console.log(`Successfully updated application status to ${newStatus}`);
+      }
+    }
+    // Handle envelope voided/terminated event
+    else if (event === 'envelope-voided') {
       const { error: updateError } = await supabase
         .from('applications')
         .update({ 
-          status: 'signed',
+          status: 'terminated',
           updated_at: new Date().toISOString()
         })
         .eq('id', applications.id);
@@ -344,22 +333,13 @@ app.post('/api/docusign/connect', async (req, res) => {
         throw new Error(`Failed to update status: ${updateError.message}`);
       }
 
-      console.log('Successfully updated application status to signed');
-      
-      return res.status(200).json({
-        message: 'Webhook processed successfully',
-        envelopeId: envelopeId,
-        applicationId: applications.id,
-        newStatus: 'signed',
-        timestamp: new Date().toISOString()
-      });
+      console.log('Successfully updated application status to terminated');
     }
 
-    // Handle non-completed events
-    console.log('Event not completed, no action needed');
     return res.status(200).json({
-      message: 'Webhook received, no action needed',
+      message: 'Webhook processed successfully',
       envelopeId: envelopeId,
+      applicationId: applications.id,
       event: event,
       timestamp: new Date().toISOString()
     });

@@ -3,8 +3,10 @@ export type ApplicationStatus =
   | 'submitted'
   | 'approved'
   | 'rejected'
-  | 'pending_signature'
-  | 'signed';
+  | 'pending_signature_applicant'
+  | 'pending_signature_admin'
+  | 'signed'
+  | 'terminated';
 
 export type Currency = 'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'JPY' | 'CNY' | 'INR';
 

@@ -13,8 +13,10 @@ const STATUS_BADGES = {
   submitted: { color: 'bg-blue-100 text-blue-800', icon: FileText },
   approved: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
   rejected: { color: 'bg-red-100 text-red-800', icon: XCircle },
-  pending_signature: { color: 'bg-purple-100 text-purple-800', icon: PenTool },
-  signed: { color: 'bg-emerald-100 text-emerald-800', icon: FileSignature }
+  pending_signature_applicant: { color: 'bg-purple-100 text-purple-800', icon: PenTool },
+  pending_signature_admin: { color: 'bg-indigo-100 text-indigo-800', icon: PenTool },
+  signed: { color: 'bg-emerald-100 text-emerald-800', icon: FileSignature },
+  terminated: { color: 'bg-red-100 text-red-800', icon: XCircle }
 };
 
 interface EditedData {
@@ -240,7 +242,7 @@ export function ApplicationDetails() {
       });
 
       // Update application status
-      const updated = await updateApplication(id, { status: 'pending_signature' });
+      const updated = await updateApplication(id, { status: 'pending_signature_applicant' });
       setApplication(updated);
     } catch (err) {
       console.error('DocuSign error:', err);
@@ -294,6 +296,28 @@ export function ApplicationDetails() {
       setApplication(withdrawn);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to withdraw application');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  const handleTerminate = async () => {
+    if (!id || !application?.envelope_id) return;
+    
+    setUpdateLoading(true);
+    try {
+      // Call DocuSign to void the envelope
+      await docuSignService.terminateEnvelope(application.envelope_id);
+      
+      // Update application status
+      const updated = await updateApplication(id, { 
+        status: 'terminated',
+        feedback: 'Agreement terminated by administrator'
+      });
+      setApplication(updated);
+    } catch (err) {
+      console.error('Error terminating agreement:', err);
+      setError(err instanceof Error ? err.message : 'Failed to terminate agreement');
     } finally {
       setUpdateLoading(false);
     }
@@ -374,7 +398,7 @@ export function ApplicationDetails() {
               Withdraw
             </button>
           )}
-          {isAdmin && (application?.status === 'submitted' || application?.status === 'pending_signature') && (
+          {isAdmin && (application?.status === 'submitted' || application?.status === 'pending_signature_applicant' || application?.status === 'pending_signature_admin') && (
             <div className="flex gap-2">
               {application.status === 'submitted' && (
                 <button
@@ -404,6 +428,16 @@ export function ApplicationDetails() {
             >
               <PenTool className="h-4 w-4 mr-2" />
               Send for Signature
+            </button>
+          )}
+          {isAdmin && application?.status === 'signed' && (
+            <button
+              onClick={handleTerminate}
+              disabled={updateLoading}
+              className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              Terminate Agreement
             </button>
           )}
           <div className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${statusBadge.color}`}>
