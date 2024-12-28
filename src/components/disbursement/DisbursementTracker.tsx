@@ -4,7 +4,7 @@ import type { DisbursementStep, DisbursementStatus } from '../../types';
 import { updateApplication } from '../../services/applications';
 
 const defaultSteps: DisbursementStep[] = [
-  { label: 'Payment Details Verification', status: 'pending' },
+  { label: 'Payment Details Verification', status: 'initiated' },
   { label: 'Fund Allocation', status: 'not_started' },
   { label: 'Bank Transfer Initiated', status: 'not_started' },
   { label: 'Disbursement Complete', status: 'not_started' }
@@ -24,10 +24,10 @@ export function DisbursementTracker({ applicationId, steps = defaultSteps, isAdm
       return defaultSteps;
     }
     
-    // If steps exist but first step isn't pending or further, initialize it
+    // If steps exist but first step isn't initiated or further, initialize it
     const initializedSteps = [...steps];
-    if (!initializedSteps[0].status || initializedSteps[0].status === 'not_started') {
-      initializedSteps[0] = { ...initializedSteps[0], status: 'pending' };
+    if (!initializedSteps[0].status || initializedSteps[0].status === 'not_started' || initializedSteps[0].status === 'pending') {
+      initializedSteps[0] = { ...initializedSteps[0], status: 'initiated' };
     }
     return initializedSteps;
   }, [steps]);
@@ -48,20 +48,17 @@ export function DisbursementTracker({ applicationId, steps = defaultSteps, isAdm
 
     // Update status based on current status
     switch (currentStep.status) {
-      case 'pending':
-        currentStep.status = 'initiated';
-        break;
       case 'initiated':
         currentStep.status = 'processing';
         break;
       case 'processing':
         currentStep.status = 'completed';
         currentStep.date = new Date().toISOString();
-        // Set next step to pending if it exists
+        // Set next step to initiated if it exists
         if (index < newSteps.length - 1) {
           newSteps[index + 1] = {
             ...newSteps[index + 1],
-            status: 'pending',
+            status: 'initiated',
             date: undefined
           };
         }
