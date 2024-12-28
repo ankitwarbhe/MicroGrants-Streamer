@@ -352,16 +352,18 @@ export function ApplicationDetails() {
               Withdraw
             </button>
           )}
-          {isAdmin && application?.status === 'submitted' && (
+          {isAdmin && (application?.status === 'submitted' || application?.status === 'pending_signature') && (
             <div className="flex gap-2">
-              <button
-                onClick={() => openFeedbackModal('approve')}
-                disabled={updateLoading}
-                className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Approve
-              </button>
+              {application.status === 'submitted' && (
+                <button
+                  onClick={() => openFeedbackModal('approve')}
+                  disabled={updateLoading}
+                  className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Approve
+                </button>
+              )}
               <button
                 onClick={() => openFeedbackModal('reject')}
                 disabled={updateLoading}
