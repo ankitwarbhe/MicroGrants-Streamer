@@ -310,6 +310,48 @@ export class DocuSignService {
       throw error;
     }
   }
+
+  async getEnvelopeUrl(envelopeId: string): Promise<string> {
+    try {
+      const authServerUrl = await this.getAuthServerUrl();
+      const authResponse = await fetch(`${authServerUrl}/api/docusign/auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          integrationKey: env.integrationKey,
+          userId: env.userId,
+          privateKey: env.privateKey
+        })
+      });
+
+      if (!authResponse.ok) {
+        const error = await authResponse.json();
+        throw new Error(error.message || 'Failed to authenticate');
+      }
+
+      const { access_token } = await authResponse.json();
+      const urlResponse = await fetch(`${authServerUrl}/api/docusign/envelopes/${envelopeId}/view`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!urlResponse.ok) {
+        const error = await urlResponse.json();
+        throw new Error(error.message || 'Failed to get envelope URL');
+      }
+
+      const { url } = await urlResponse.json();
+      return url;
+    } catch (error) {
+      console.error('DocuSign error:', error);
+      throw error;
+    }
+  }
 }
 
 export const docuSignService = new DocuSignService(); 

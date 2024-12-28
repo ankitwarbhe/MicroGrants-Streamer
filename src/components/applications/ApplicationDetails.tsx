@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication, withdrawApplication } from '../../services/applications';
 import { docuSignService } from '../../services/docusign.ts';
 import type { Application, Currency } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download, Undo } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download, Undo, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 import { CURRENCY_SYMBOLS } from '../../types';
@@ -54,6 +54,8 @@ export function ApplicationDetails() {
   const [signedDocument, setSignedDocument] = useState<string | null>(null);
   const [loadingDocument, setLoadingDocument] = useState(false);
   const [documentError, setDocumentError] = useState<string | null>(null);
+  const [loadingEnvelopeUrl, setLoadingEnvelopeUrl] = useState(false);
+  const [envelopeUrlError, setEnvelopeUrlError] = useState<string | null>(null);
 
   const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
   const isOwner = application?.user_id === user?.id;
@@ -296,6 +298,22 @@ export function ApplicationDetails() {
       setError(err instanceof Error ? err.message : 'Failed to withdraw application');
     } finally {
       setUpdateLoading(false);
+    }
+  };
+
+  const handleViewInDocuSign = async () => {
+    if (!application?.envelope_id) return;
+    
+    setLoadingEnvelopeUrl(true);
+    setEnvelopeUrlError(null);
+    
+    try {
+      const url = await docuSignService.getEnvelopeUrl(application.envelope_id);
+      window.open(url, '_blank');
+    } catch (error) {
+      setEnvelopeUrlError(error instanceof Error ? error.message : 'Failed to open envelope in DocuSign');
+    } finally {
+      setLoadingEnvelopeUrl(false);
     }
   };
 
@@ -638,23 +656,35 @@ export function ApplicationDetails() {
                   </div>
                 )}
 
-                {application.status === 'signed' && application.envelope_id && (
+                {(application.status === 'signed' || application.status === 'pending_signature') && application.envelope_id && (
                   <div className="sm:col-span-2">
                     <dt className="text-sm font-medium text-gray-500 flex items-center">
                       <FileSignature className="h-4 w-4 mr-1" />
-                      Signed Document
+                      Document Actions
                     </dt>
-                    <dd className="mt-1">
-                      <button
-                        onClick={handleDownloadSignedDocument}
-                        disabled={loadingDocument}
-                        className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        {loadingDocument ? 'Downloading...' : 'Download Signed Document'}
-                      </button>
-                      {documentError && (
-                        <p className="mt-2 text-sm text-red-600">{documentError}</p>
+                    <dd className="mt-1 flex gap-3">
+                      {application.status === 'signed' && (
+                        <button
+                          onClick={handleDownloadSignedDocument}
+                          disabled={loadingDocument}
+                          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          {loadingDocument ? 'Downloading...' : 'Download Signed Document'}
+                        </button>
+                      )}
+                      {isAdmin && (
+                        <button
+                          onClick={handleViewInDocuSign}
+                          disabled={loadingEnvelopeUrl}
+                          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          {loadingEnvelopeUrl ? 'Opening...' : 'View in DocuSign'}
+                        </button>
+                      )}
+                      {(documentError || envelopeUrlError) && (
+                        <p className="mt-2 text-sm text-red-600">{documentError || envelopeUrlError}</p>
                       )}
                     </dd>
                   </div>
