@@ -165,17 +165,17 @@ export class DocuSignService {
           accessToken: access_token,
           applicationId,
           envelope: templateId ? {
-            // Template-based envelope
-            templateId: templateId,
+            // Template-based envelope - simpler structure
+            templateId,
+            emailSubject: createEmailSubject(documentName),
+            status: 'sent',
             templateRoles: templateRoles || [{
               email: signerEmail,
               name: signerName,
               roleName: 'signer'
-            }],
-            status: 'sent',
-            emailSubject: createEmailSubject(documentName)
+            }]
           } : {
-            // Document-based envelope
+            // Document-based envelope - includes document data
             emailSubject: createEmailSubject(documentName),
             documents: [{
               documentBase64: documentPath,
