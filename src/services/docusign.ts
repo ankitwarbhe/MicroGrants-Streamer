@@ -1,11 +1,18 @@
 import { Buffer } from 'buffer';
 
 interface SignatureRequest {
-  documentPath: string;
+  documentPath?: string;
   signerEmail: string;
   signerName: string;
   documentName?: string;
   applicationId: string;
+  templateId?: string;
+  templateRoles?: {
+    email: string;
+    name: string;
+    roleName: string;
+    tabs?: Record<string, any>;
+  }[];
 }
 
 interface DocuSignError {
@@ -114,7 +121,9 @@ export class DocuSignService {
     signerEmail,
     signerName,
     documentName = 'Document for Signature',
-    applicationId
+    applicationId,
+    templateId,
+    templateRoles
   }: SignatureRequest) {
     try {
       const authServerUrl = await this.getAuthServerUrl();
@@ -149,7 +158,18 @@ export class DocuSignService {
           accountId: env.accountId,
           accessToken: access_token,
           applicationId,
-          envelope: {
+          envelope: templateId ? {
+            // Template-based envelope
+            templateId: templateId,
+            templateRoles: templateRoles || [{
+              email: signerEmail,
+              name: signerName,
+              roleName: 'signer'
+            }],
+            status: 'sent',
+            emailSubject: `Please sign the grant agreement for: ${documentName.replace(' - Grant Agreement.pdf', '')}`
+          } : {
+            // Document-based envelope
             emailSubject: `Please sign the grant agreement for: ${documentName.replace(' - Grant Agreement.pdf', '')}`,
             documents: [{
               documentBase64: documentPath,

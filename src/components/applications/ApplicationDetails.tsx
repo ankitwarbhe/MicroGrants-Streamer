@@ -174,36 +174,46 @@ export function ApplicationDetails() {
     if (!id || !application) return;
     setUpdateLoading(true);
     try {
-      // Get the auth server URL
-      const authServerUrl = await docuSignService.getAuthServerUrl();
-
-      // Generate PDF document using server endpoint
-      const pdfResponse = await fetch(`${authServerUrl}/api/generate-pdf`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          title: application.title,
-          description: application.description,
-          amount: application.amount_requested,
-          submissionDate: new Date(application.created_at).toLocaleDateString()
-        })
-      });
-
-      const { pdfBase64 } = await pdfResponse.json();
-
-      if (!pdfBase64) {
-        throw new Error('Failed to generate PDF document');
-      }
-
-      // Send for signature using DocuSign
+      // Send for signature using DocuSign template
       await docuSignService.sendDocumentForSignature({
-        documentPath: pdfBase64,
         signerEmail: application.user_email || '',
-        signerName: application.user_email?.split('@')[0] || 'Applicant',
-        documentName: `${application.title} - Grant Agreement.pdf`,
-        applicationId: id
+        signerName: `${application.first_name} ${application.last_name}`,
+        documentName: `${application.title} - Grant Agreement`,
+        applicationId: id,
+        templateId: import.meta.env.VITE_DOCUSIGN_TEMPLATE_ID,
+        templateRoles: [{
+          email: application.user_email || '',
+          name: `${application.first_name} ${application.last_name}`,
+          roleName: 'signer',
+          tabs: {
+            textTabs: [
+              {
+                tabLabel: 'project_title',
+                value: application.title
+              },
+              {
+                tabLabel: 'project_description',
+                value: application.description
+              },
+              {
+                tabLabel: 'amount_requested',
+                value: `$${application.amount_requested.toLocaleString()}`
+              },
+              {
+                tabLabel: 'applicant_name',
+                value: `${application.first_name} ${application.last_name}`
+              },
+              {
+                tabLabel: 'applicant_email',
+                value: application.user_email || ''
+              },
+              {
+                tabLabel: 'submission_date',
+                value: new Date(application.created_at).toLocaleDateString()
+              }
+            ]
+          }
+        }]
       });
 
       // Update application status
