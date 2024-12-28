@@ -333,8 +333,8 @@ export class DocuSignService {
 
       const { access_token } = await authResponse.json();
       
-      // Get the console URL for the envelope
-      const urlResponse = await fetch(`${authServerUrl}/api/docusign/envelopes/${envelopeId}/console`, {
+      // Create a sender view for the envelope
+      const urlResponse = await fetch(`${authServerUrl}/api/docusign/envelopes/${envelopeId}/views/sender`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -342,7 +342,6 @@ export class DocuSignService {
         body: JSON.stringify({
           accountId: env.accountId,
           accessToken: access_token,
-          envelopeId,
           returnUrl: window.location.href // Return to the current page after viewing
         })
       });
