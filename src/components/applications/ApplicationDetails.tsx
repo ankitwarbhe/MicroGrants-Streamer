@@ -182,10 +182,17 @@ export function ApplicationDetails() {
         name: `${application.first_name} ${application.last_name}`,
         roleName: 'Signer 1',
         tabs: {
-          // Text tabs for custom fields
           textTabs: [
             {
               tabLabel: 'Project_Title',
+              value: application.title
+            },
+            {
+              tabLabel: 'ProjectTitle',
+              value: application.title
+            },
+            {
+              tabLabel: 'Title',
               value: application.title
             },
             {
@@ -193,15 +200,55 @@ export function ApplicationDetails() {
               value: application.description
             },
             {
+              tabLabel: 'ProjectDescription',
+              value: application.description
+            },
+            {
+              tabLabel: 'Description',
+              value: application.description
+            },
+            {
               tabLabel: 'Amount_Requested',
               value: `$${application.amount_requested.toLocaleString()}`
+            },
+            {
+              tabLabel: 'AmountRequested',
+              value: `$${application.amount_requested.toLocaleString()}`
+            },
+            {
+              tabLabel: 'Amount',
+              value: `$${application.amount_requested.toLocaleString()}`
+            },
+            {
+              tabLabel: 'Applicant_Name',
+              value: `${application.first_name} ${application.last_name}`
+            },
+            {
+              tabLabel: 'ApplicantName',
+              value: `${application.first_name} ${application.last_name}`
+            },
+            {
+              tabLabel: 'Name',
+              value: `${application.first_name} ${application.last_name}`
+            },
+            {
+              tabLabel: 'Submission_Date',
+              value: new Date(application.created_at).toLocaleDateString()
+            },
+            {
+              tabLabel: 'SubmissionDate',
+              value: new Date(application.created_at).toLocaleDateString()
+            },
+            {
+              tabLabel: 'Date',
+              value: new Date(application.created_at).toLocaleDateString()
             }
           ]
         }
       };
 
-      // Log the template role for debugging
-      console.log('Template role:', templateRole);
+      // Log the template role and tabs for debugging
+      console.log('Template role:', JSON.stringify(templateRole, null, 2));
 
       // Send for signature using DocuSign template
       await docuSignService.sendDocumentForSignature({
