@@ -174,6 +174,47 @@ export function ApplicationDetails() {
     if (!id || !application) return;
     setUpdateLoading(true);
     try {
+      // Log the application data for debugging
+      console.log('Application data:', application);
+
+      const templateRole = {
+        email: application.user_email || '',
+        name: `${application.first_name} ${application.last_name}`,
+        roleName: 'Signer 1', // This should match the role name in your DocuSign template
+        tabs: {
+          // Make sure these match EXACTLY with the tag names in your DocuSign template
+          textTabs: [
+            {
+              tabLabel: 'Project_Title', // Example: adjust based on your template's actual tag name
+              value: application.title
+            },
+            {
+              tabLabel: 'Project_Description', // Example: adjust based on your template's actual tag name
+              value: application.description
+            },
+            {
+              tabLabel: 'Amount_Requested', // Example: adjust based on your template's actual tag name
+              value: `$${application.amount_requested.toLocaleString()}`
+            },
+            {
+              tabLabel: 'Applicant_Name', // Example: adjust based on your template's actual tag name
+              value: `${application.first_name} ${application.last_name}`
+            },
+            {
+              tabLabel: 'Applicant_Email', // Example: adjust based on your template's actual tag name
+              value: application.user_email || ''
+            },
+            {
+              tabLabel: 'Submission_Date', // Example: adjust based on your template's actual tag name
+              value: new Date(application.created_at).toLocaleDateString()
+            }
+          ]
+        }
+      };
+
+      // Log the template role for debugging
+      console.log('Template role:', templateRole);
+
       // Send for signature using DocuSign template
       await docuSignService.sendDocumentForSignature({
         signerEmail: application.user_email || '',
@@ -181,45 +222,14 @@ export function ApplicationDetails() {
         documentName: `${application.title} - Grant Agreement`,
         applicationId: id,
         templateId: import.meta.env.VITE_DOCUSIGN_TEMPLATE_ID,
-        templateRoles: [{
-          email: application.user_email || '',
-          name: `${application.first_name} ${application.last_name}`,
-          roleName: 'signer',
-          tabs: {
-            textTabs: [
-              {
-                tabLabel: 'project_title',
-                value: application.title
-              },
-              {
-                tabLabel: 'project_description',
-                value: application.description
-              },
-              {
-                tabLabel: 'amount_requested',
-                value: `$${application.amount_requested.toLocaleString()}`
-              },
-              {
-                tabLabel: 'applicant_name',
-                value: `${application.first_name} ${application.last_name}`
-              },
-              {
-                tabLabel: 'applicant_email',
-                value: application.user_email || ''
-              },
-              {
-                tabLabel: 'submission_date',
-                value: new Date(application.created_at).toLocaleDateString()
-              }
-            ]
-          }
-        }]
+        templateRoles: [templateRole]
       });
 
       // Update application status
       const updated = await updateApplication(id, { status: 'pending_signature' });
       setApplication(updated);
     } catch (err) {
+      console.error('DocuSign error:', err);
       setError(err instanceof Error ? err.message : 'Failed to send for signature');
     } finally {
       setUpdateLoading(false);
