@@ -1,107 +1,119 @@
 import React from 'react';
-import { DisbursementMilestone, DisbursementStage } from '../../types';
-import { Check, Circle } from 'lucide-react';
+import { Check, Clock, ArrowRight } from 'lucide-react';
+import type { DisbursementStep, DisbursementStatus } from '../../types';
+import { updateApplication } from '../../services/applications';
 
-interface DisbursementTrackerProps {
-  milestones: DisbursementMilestone[];
+const defaultSteps: DisbursementStep[] = [
+  { label: 'Payment Details Verification', status: 'pending' },
+  { label: 'Fund Allocation', status: 'pending' },
+  { label: 'Bank Transfer Initiated', status: 'pending' },
+  { label: 'Disbursement Complete', status: 'pending' }
+];
+
+interface Props {
+  applicationId: string;
+  steps?: DisbursementStep[];
   isAdmin: boolean;
-  onUpdateStage?: (milestoneId: string, stage: DisbursementStage) => Promise<void>;
+  onUpdate?: (steps: DisbursementStep[]) => void;
 }
 
-export function DisbursementTracker({ milestones, isAdmin, onUpdateStage }: DisbursementTrackerProps) {
-  const getStageColor = (stage: DisbursementStage) => {
-    switch (stage) {
-      case 'completed':
-        return 'text-green-600 bg-green-100 border-green-200';
-      case 'in_progress':
-        return 'text-blue-600 bg-blue-100 border-blue-200';
+export function DisbursementTracker({ applicationId, steps = defaultSteps, isAdmin, onUpdate }: Props) {
+  const handleStepUpdate = async (index: number) => {
+    if (!isAdmin) return;
+
+    const newSteps = [...steps];
+    const currentStep = newSteps[index];
+
+    // Update status based on current status
+    switch (currentStep.status) {
+      case 'pending':
+        currentStep.status = 'initiated';
+        break;
+      case 'initiated':
+        currentStep.status = 'processing';
+        break;
+      case 'processing':
+        currentStep.status = 'completed';
+        currentStep.date = new Date().toISOString();
+        break;
       default:
-        return 'text-gray-400 bg-gray-50 border-gray-200';
+        return;
+    }
+
+    try {
+      // Update application with new steps
+      const updated = await updateApplication(applicationId, {
+        disbursement_steps: newSteps
+      });
+      onUpdate?.(updated.disbursement_steps || []);
+    } catch (error) {
+      console.error('Failed to update disbursement status:', error);
     }
   };
 
-  const getArrowColor = (stage: DisbursementStage) => {
-    switch (stage) {
+  const getStepIcon = (status: DisbursementStatus) => {
+    switch (status) {
       case 'completed':
-        return 'bg-gradient-to-r from-green-500 to-green-600';
-      case 'in_progress':
-        return 'bg-gradient-to-r from-blue-500 to-blue-600';
+        return <Check className="h-5 w-5 text-white" />;
+      case 'processing':
+        return <div className="h-2 w-2 bg-white rounded-full animate-pulse" />;
+      case 'initiated':
+        return <Clock className="h-5 w-5 text-white" />;
       default:
-        return 'bg-gradient-to-r from-gray-200 to-gray-300';
+        return <div className="h-2 w-2 bg-white rounded-full" />;
     }
   };
 
-  const handleStageClick = async (milestone: DisbursementMilestone) => {
-    if (!isAdmin || !onUpdateStage) return;
-
-    const nextStage: Record<DisbursementStage, DisbursementStage> = {
-      pending: 'in_progress',
-      in_progress: 'completed',
-      completed: 'pending'
-    };
-
-    await onUpdateStage(milestone.id, nextStage[milestone.stage]);
+  const getStepColor = (status: DisbursementStatus) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-500';
+      case 'processing':
+        return 'bg-blue-500';
+      case 'initiated':
+        return 'bg-yellow-500';
+      default:
+        return 'bg-gray-300';
+    }
   };
 
   return (
-    <div className="space-y-8">
-      <h3 className="text-lg font-medium text-gray-900">Disbursement Timeline</h3>
-      
-      {/* Timeline Track */}
-      <div className="relative">
-        {/* Horizontal Timeline */}
-        <div className="flex items-center justify-between">
-          {milestones.map((milestone, index) => (
-            <React.Fragment key={milestone.id}>
-              {/* Milestone Circle */}
-              <div className="relative flex flex-col items-center">
-                <button
-                  onClick={() => handleStageClick(milestone)}
-                  disabled={!isAdmin}
-                  className={`relative flex items-center justify-center w-16 h-16 rounded-full border-4 ${
-                    getStageColor(milestone.stage)
-                  } ${isAdmin ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
-                >
-                  {milestone.stage === 'completed' ? (
-                    <Check className="w-8 h-8" />
-                  ) : (
-                    <span className="text-xl font-bold">{milestone.milestone_number}</span>
-                  )}
-                </button>
-
-                {/* Milestone Details Below Circle */}
-                <div className="absolute top-20 w-48 text-center">
-                  <h4 className="font-medium text-gray-900">{milestone.title}</h4>
-                  <p className="mt-1 text-sm text-gray-500">{milestone.description}</p>
-                  <div className="mt-2">
-                    <span className="text-sm font-medium text-gray-900">
-                      ₹{milestone.amount.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="mt-1">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      milestone.stage === 'completed' ? 'bg-green-100 text-green-800' :
-                      milestone.stage === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {milestone.stage.replace('_', ' ').toUpperCase()}
-                    </span>
-                  </div>
-                  {milestone.completed_at && (
-                    <div className="mt-1 text-xs text-gray-500">
-                      Completed on {new Date(milestone.completed_at).toLocaleDateString()}
-                    </div>
-                  )}
-                </div>
+    <div className="w-full">
+      <h3 className="text-lg font-medium text-gray-900 mb-4">Disbursement Status</h3>
+      <div className="flex items-center justify-between">
+        {steps.map((step, index) => (
+          <React.Fragment key={step.label}>
+            <div className="flex flex-col items-center">
+              <button
+                onClick={() => handleStepUpdate(index)}
+                disabled={!isAdmin}
+                className={`w-10 h-10 rounded-full flex items-center justify-center ${getStepColor(step.status)} 
+                  ${isAdmin ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} transition-colors duration-200`}
+                title={isAdmin ? 'Click to update status' : undefined}
+              >
+                {getStepIcon(step.status)}
+              </button>
+              <div className="mt-2 text-center">
+                <p className="text-sm font-medium text-gray-900">{step.label}</p>
+                {step.date && (
+                  <p className="text-xs text-gray-500">
+                    {new Date(step.date).toLocaleDateString()}
+                  </p>
+                )}
               </div>
-
-              {/* Arrow connecting to next milestone */}
-              {index < milestones.length - 1 && (
-                <div className={`h-2 flex-1 mx-4 rounded ${getArrowColor(milestone.stage)}`} />
-              )}
-            </React.Fragment>
-          ))}
-        </div>
+            </div>
+            {index < steps.length - 1 && (
+              <div className="flex-1 h-0.5 bg-gray-200 mx-2">
+                <div
+                  className="h-full bg-green-500 transition-all duration-500"
+                  style={{
+                    width: step.status === 'completed' ? '100%' : '0%'
+                  }}
+                />
+              </div>
+            )}
+          </React.Fragment>
+        ))}
       </div>
     </div>
   );

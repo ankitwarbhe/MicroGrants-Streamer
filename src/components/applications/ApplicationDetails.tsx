@@ -2,12 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication, withdrawApplication } from '../../services/applications';
 import { docuSignService } from '../../services/docusign.ts';
-import type { Application, Currency, DisbursementMilestone, DisbursementStage } from '../../types';
+import type { Application, Currency } from '../../types';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download, Undo, Eye } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 import { CURRENCY_SYMBOLS } from '../../types';
-import { getMilestones, updateMilestoneStage, generateDefaultMilestones } from '../../services/disbursement';
 import { DisbursementTracker } from '../disbursement/DisbursementTracker';
 
 const STATUS_BADGES = {
@@ -80,8 +79,6 @@ export function ApplicationDetails() {
   const [submittingPayment, setSubmittingPayment] = useState(false);
   const [upiError, setUpiError] = useState<string>('');
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
-  const [milestones, setMilestones] = useState<DisbursementMilestone[]>([]);
-  const [loadingMilestones, setLoadingMilestones] = useState(false);
 
   const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
   const isOwner = application?.user_id === user?.id;
@@ -355,47 +352,12 @@ export function ApplicationDetails() {
         has_submitted_payment_details: true
       });
       setApplication(updated);
-
-      // Generate default milestones after payment details are submitted
-      const milestones = await generateDefaultMilestones(updated);
-      setMilestones(milestones);
-
       setShowPaymentForm(false);
       setShowConfirmation(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save payment details');
     } finally {
       setSubmittingPayment(false);
-    }
-  };
-
-  // Add useEffect to fetch milestones
-  useEffect(() => {
-    async function fetchMilestones() {
-      if (!id || !application?.has_submitted_payment_details) return;
-      
-      setLoadingMilestones(true);
-      try {
-        const data = await getMilestones(id);
-        setMilestones(data);
-      } catch (err) {
-        console.error('Error fetching milestones:', err);
-      } finally {
-        setLoadingMilestones(false);
-      }
-    }
-
-    fetchMilestones();
-  }, [id, application?.has_submitted_payment_details]);
-
-  const handleUpdateMilestoneStage = async (milestoneId: string, stage: DisbursementStage) => {
-    try {
-      const updatedMilestone = await updateMilestoneStage(milestoneId, stage);
-      setMilestones(prev => 
-        prev.map(m => m.id === milestoneId ? updatedMilestone : m)
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update milestone');
     }
   };
 
@@ -760,7 +722,7 @@ export function ApplicationDetails() {
                   </div>
                 )}
 
-                {/* Payment Details Section */}
+                {/* Payment Details Section - Visible to both owner and admin */}
                 {(isOwner || isAdmin) && application.status === 'signed' && (
                   <div className="sm:col-span-2">
                     <dt className="text-sm font-medium text-gray-500">Payment Details</dt>
@@ -787,25 +749,20 @@ export function ApplicationDetails() {
                   </div>
                 )}
 
-                {/* Disbursement Tracker Section */}
+                {/* Disbursement Tracker - Show when payment details are submitted */}
                 {application.has_submitted_payment_details && (
                   <div className="sm:col-span-2 mt-6">
-                    {loadingMilestones ? (
-                      <div className="text-center py-4">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                      </div>
-                    ) : milestones.length > 0 ? (
-                      <DisbursementTracker
-                        milestones={milestones}
-                        isAdmin={isAdmin}
-                        onUpdateStage={handleUpdateMilestoneStage}
-                      />
-                    ) : isAdmin ? (
-                      <div className="text-center py-4">
-                        <p className="text-sm text-gray-500">No milestones set up yet.</p>
-                        {/* You can add a button here to create initial milestones if needed */}
-                      </div>
-                    ) : null}
+                    <DisbursementTracker
+                      applicationId={application.id}
+                      steps={application.disbursement_steps}
+                      isAdmin={isAdmin}
+                      onUpdate={(steps) => {
+                        setApplication(prev => prev ? {
+                          ...prev,
+                          disbursement_steps: steps
+                        } : null);
+                      }}
+                    />
                   </div>
                 )}
               </dl>
