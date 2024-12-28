@@ -13,6 +13,16 @@ interface SignatureRequest {
     roleName: string;
     tabs?: Record<string, any>;
   }[];
+  reminderSettings?: {
+    reminderEnabled: boolean;
+    reminderDelay: number; // Days before first reminder
+    reminderFrequency: number; // Days between reminders
+  };
+  expirationSettings?: {
+    expirationEnabled: boolean;
+    expirationDays: number; // Days until envelope expires
+    warningDays: number; // Days before expiration to warn signers
+  };
 }
 
 interface DocuSignError {
@@ -129,7 +139,17 @@ export class DocuSignService {
     documentName = 'Document for Signature',
     applicationId,
     templateId,
-    templateRoles
+    templateRoles,
+    reminderSettings = {
+      reminderEnabled: true,
+      reminderDelay: 2, // First reminder after 2 days
+      reminderFrequency: 2, // Remind every 2 days
+    },
+    expirationSettings = {
+      expirationEnabled: true,
+      expirationDays: 14, // Expire after 14 days
+      warningDays: 3, // Warn 3 days before expiration
+    }
   }: SignatureRequest) {
     try {
       const authServerUrl = await this.getAuthServerUrl();
@@ -154,7 +174,7 @@ export class DocuSignService {
 
       const { access_token } = await authResponse.json();
 
-      // Create envelope
+      // Create envelope with reminder and expiration settings
       const envelopeResponse = await fetch(`${authServerUrl}/api/docusign/envelopes`, {
         method: 'POST',
         headers: {
@@ -165,7 +185,7 @@ export class DocuSignService {
           accessToken: access_token,
           applicationId,
           envelope: templateId ? {
-            // Template-based envelope - simpler structure
+            // Template-based envelope
             templateId,
             emailSubject: createEmailSubject(documentName),
             status: 'sent',
@@ -173,9 +193,22 @@ export class DocuSignService {
               email: signerEmail,
               name: signerName,
               roleName: 'signer'
-            }]
+            }],
+            // Add notification configuration
+            notification: {
+              reminders: reminderSettings.reminderEnabled ? {
+                reminderEnabled: 'true',
+                reminderDelay: reminderSettings.reminderDelay.toString(),
+                reminderFrequency: reminderSettings.reminderFrequency.toString()
+              } : undefined,
+              expirations: expirationSettings.expirationEnabled ? {
+                expirationEnabled: 'true',
+                expirationDays: expirationSettings.expirationDays.toString(),
+                expireWarn: expirationSettings.warningDays.toString()
+              } : undefined
+            }
           } : {
-            // Document-based envelope - includes document data
+            // Document-based envelope
             emailSubject: createEmailSubject(documentName),
             documents: [{
               documentBase64: documentPath,
@@ -198,7 +231,20 @@ export class DocuSignService {
                 }
               }]
             },
-            status: 'sent'
+            status: 'sent',
+            // Add notification configuration
+            notification: {
+              reminders: reminderSettings.reminderEnabled ? {
+                reminderEnabled: 'true',
+                reminderDelay: reminderSettings.reminderDelay.toString(),
+                reminderFrequency: reminderSettings.reminderFrequency.toString()
+              } : undefined,
+              expirations: expirationSettings.expirationEnabled ? {
+                expirationEnabled: 'true',
+                expirationDays: expirationSettings.expirationDays.toString(),
+                expireWarn: expirationSettings.warningDays.toString()
+              } : undefined
+            }
           }
         })
       });
