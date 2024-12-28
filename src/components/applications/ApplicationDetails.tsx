@@ -26,6 +26,14 @@ interface EditedData {
   currency: Currency;
 }
 
+interface PaymentDetails {
+  beneficiary_name: string;
+  bank_branch: string;
+  ifsc_code: string;
+  account_type: string;
+  account_number: string;
+}
+
 function formatAmount(amount: number, currency: string) {
   const symbol = CURRENCY_SYMBOLS[currency as keyof typeof CURRENCY_SYMBOLS] || currency;
   return `${symbol}${amount.toLocaleString()}`;
@@ -56,6 +64,15 @@ export function ApplicationDetails() {
   const [documentError, setDocumentError] = useState<string | null>(null);
   const [showPdfViewer, setShowPdfViewer] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>({
+    beneficiary_name: '',
+    bank_branch: '',
+    ifsc_code: '',
+    account_type: '',
+    account_number: ''
+  });
+  const [submittingPayment, setSubmittingPayment] = useState(false);
 
   const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
   const isOwner = application?.user_id === user?.id;
@@ -300,6 +317,26 @@ export function ApplicationDetails() {
       setError(err instanceof Error ? err.message : 'Failed to withdraw application');
     } finally {
       setUpdateLoading(false);
+    }
+  };
+
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id || !application) return;
+
+    setSubmittingPayment(true);
+    try {
+      const updated = await updateApplication(id, {
+        ...application,
+        payment_details: paymentDetails,
+        has_submitted_payment_details: true
+      });
+      setApplication(updated);
+      setShowPaymentForm(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save payment details');
+    } finally {
+      setSubmittingPayment(false);
     }
   };
 
@@ -663,11 +700,129 @@ export function ApplicationDetails() {
                     </dd>
                   </div>
                 )}
+
+                {isOwner && application.status === 'signed' && !application.has_submitted_payment_details && (
+                  <div className="sm:col-span-2">
+                    <dt className="text-sm font-medium text-gray-500">Payment Details</dt>
+                    <dd className="mt-1">
+                      <button
+                        onClick={() => setShowPaymentForm(true)}
+                        className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                      >
+                        Submit Payment Details
+                      </button>
+                    </dd>
+                  </div>
+                )}
               </dl>
             </div>
           </>
         )}
       </div>
+
+      {/* Payment Details Modal */}
+      {showPaymentForm && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg w-full max-w-lg">
+            <div className="p-4 border-b">
+              <h3 className="text-lg font-medium">Payment Details</h3>
+            </div>
+            <form onSubmit={handlePaymentSubmit} className="p-4">
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="beneficiary_name" className="block text-sm font-medium text-gray-700">
+                    Beneficiary Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="beneficiary_name"
+                    name="beneficiary_name"
+                    required
+                    value={paymentDetails.beneficiary_name}
+                    onChange={(e) => setPaymentDetails(prev => ({ ...prev, beneficiary_name: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="bank_branch" className="block text-sm font-medium text-gray-700">
+                    Bank Branch Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="bank_branch"
+                    name="bank_branch"
+                    required
+                    value={paymentDetails.bank_branch}
+                    onChange={(e) => setPaymentDetails(prev => ({ ...prev, bank_branch: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="ifsc_code" className="block text-sm font-medium text-gray-700">
+                    IFSC Code <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="ifsc_code"
+                    name="ifsc_code"
+                    required
+                    value={paymentDetails.ifsc_code}
+                    onChange={(e) => setPaymentDetails(prev => ({ ...prev, ifsc_code: e.target.value.toUpperCase() }))}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="account_type" className="block text-sm font-medium text-gray-700">
+                    Account Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="account_type"
+                    name="account_type"
+                    required
+                    value={paymentDetails.account_type}
+                    onChange={(e) => setPaymentDetails(prev => ({ ...prev, account_type: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  >
+                    <option value="">Select Account Type</option>
+                    <option value="savings">Savings</option>
+                    <option value="current">Current</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="account_number" className="block text-sm font-medium text-gray-700">
+                    Account Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="account_number"
+                    name="account_number"
+                    required
+                    value={paymentDetails.account_number}
+                    onChange={(e) => setPaymentDetails(prev => ({ ...prev, account_number: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  />
+                </div>
+              </div>
+              <div className="mt-5 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowPaymentForm(false)}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingPayment}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  {submittingPayment ? 'Saving...' : 'Save Payment Details'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {showPdfViewer && pdfUrl && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">

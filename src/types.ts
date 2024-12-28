@@ -34,4 +34,12 @@ export interface Application {
   created_at: string;
   updated_at: string;
   envelope_id?: string;
+  payment_details?: {
+    beneficiary_name: string;
+    bank_branch: string;
+    ifsc_code: string;
+    account_type: string;
+    account_number: string;
+  };
+  has_submitted_payment_details?: boolean;
 } 
