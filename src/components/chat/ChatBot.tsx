@@ -111,26 +111,41 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
   useEffect(() => {
     try {
       if (!chatServiceRef) {
-        console.log('Creating new GeminiChatService instance');
+        console.log('🚀 Creating new GeminiChatService instance');
         chatServiceRef = new GeminiChatService();
       }
       const currentPage = getCurrentPage();
-      console.log('Setting user and page context:', { userId, isAdmin, currentPage });
+      console.log('📍 Context Setup:', { 
+        userId, 
+        isAdmin, 
+        currentPage,
+        hasDocumentContent: !!documentContent,
+        hasEnvelopeId: !!envelopeId 
+      });
       chatServiceRef.setUser(userId, isAdmin);
       chatServiceRef.setCurrentPage(currentPage);
 
       // If we have document content, set it in the chat service
       if (documentContent) {
+        console.log('📄 Setting document content:', {
+          contentLength: documentContent.length,
+          preview: documentContent.substring(0, 100) + '...'
+        });
         chatServiceRef.setDocumentContent(documentContent);
       }
       // If we have an envelopeId but no content, fetch it
       else if (envelopeId) {
+        console.log('🔄 Fetching document content for envelope:', envelopeId);
         const fetchDocumentContent = async () => {
           try {
             const content = await docuSignService.getDocumentContent(envelopeId);
+            console.log('✅ Document content fetched:', {
+              contentLength: content.length,
+              preview: content.substring(0, 100) + '...'
+            });
             chatServiceRef?.setDocumentContent(content);
           } catch (err) {
-            console.error('Error fetching document content:', err);
+            console.error('❌ Error fetching document content:', err);
             setError('Failed to load document content for chat assistance.');
           }
         };
@@ -139,7 +154,7 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
 
       setError(null);
     } catch (err) {
-      console.error('Error initializing chat service:', err);
+      console.error('❌ Error initializing chat service:', err);
       setError('Failed to initialize chat service. Please check your API key configuration.');
     }
   }, [userId, isAdmin, location.pathname, envelopeId, documentContent]);
@@ -157,14 +172,17 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
     do {
       newQuestions = SAMPLE_QUESTIONS[Math.floor(Math.random() * SAMPLE_QUESTIONS.length)];
     } while (newQuestions === currentQuestions);
+    console.log('🔄 New questions selected:', newQuestions);
     setCurrentQuestions(newQuestions);
     setShowSuggestions(true);
   };
 
   const handleQuestionClick = async (question: string) => {
+    console.log('👆 Question clicked:', question);
     setInputMessage(question);
     setShowSuggestions(false);
     await handleSubmit(null, question);
+    console.log('🔄 Refreshing questions after answer');
     refreshQuestions();
   };
 
@@ -173,16 +191,31 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
     const messageToSend = forcedMessage || inputMessage;
     if (!messageToSend.trim() || isLoading || !chatServiceRef) return;
 
+    console.log('📤 Sending message:', {
+      message: messageToSend,
+      isForced: !!forcedMessage,
+      timestamp: new Date().toISOString()
+    });
+
     setInputMessage('');
     setMessages(prev => [...prev, { role: 'user', content: messageToSend.trim() }]);
     setIsLoading(true);
     setError(null);
 
     try {
+      console.time('⏱️ Chat Response Time');
       const response = await chatServiceRef.sendMessage(messageToSend.trim());
+      console.timeEnd('⏱️ Chat Response Time');
+      
+      console.log('📥 Received response:', {
+        responseLength: response.length,
+        preview: response.substring(0, 100) + '...',
+        timestamp: new Date().toISOString()
+      });
+
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
     } catch (error) {
-      console.error('Chat error:', error);
+      console.error('❌ Chat error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to get response from AI. Please try again.';
       setError(errorMessage);
       setMessages(prev => [
@@ -202,6 +235,7 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
   };
 
   const toggleChat = () => {
+    console.log(`${isOpen ? '🔒 Closing' : '🔓 Opening'} chat window`);
     setIsOpen(!isOpen);
     if (!isOpen && inputRef.current) {
       setTimeout(() => {

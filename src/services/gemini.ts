@@ -31,15 +31,18 @@ export class GeminiChatService {
   }
 
   setUser(userId: string, isAdmin: boolean) {
+    console.log('👤 Setting user context:', { userId, isAdmin });
     this.userId = userId;
     this.isAdmin = isAdmin;
   }
 
   setCurrentPage(page: string) {
+    console.log('📍 Setting current page:', page);
     this.currentPage = page;
     if (page.includes('applications/')) {
       const applicationId = page.split('applications/')[1];
       if (applicationId) {
+        console.log('🔄 Fetching application data for:', applicationId);
         this.fetchApplicationData(applicationId);
       }
     }
@@ -49,6 +52,13 @@ export class GeminiChatService {
     try {
       const application = await getApplicationById(applicationId);
       if (application) {
+        console.log('✅ Application data fetched:', {
+          id: application.id,
+          status: application.status,
+          hasPaymentDetails: !!application.payment_details,
+          hasDisbursementSteps: !!application.disbursement_steps
+        });
+        
         this.applicationData = `
 ## Application Details
 - ID: ${application.id}
@@ -71,21 +81,31 @@ ${application.payment_details ? `
 ${application.disbursement_steps ? `
 ## Disbursement Status
 ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label}: ${step.status}`).join('\n')}` : ''}`;
+
+        console.log('📄 Application data formatted:', {
+          dataLength: this.applicationData.length,
+          preview: this.applicationData.substring(0, 100) + '...'
+        });
         
         this.resetChat(); // Reset chat with new application data
       }
     } catch (error) {
-      console.error('Error fetching application data:', error);
+      console.error('❌ Error fetching application data:', error);
     }
   }
 
   setDocumentContent(content: string) {
+    console.log('📄 Setting document content:', {
+      contentLength: content.length,
+      preview: content.substring(0, 100) + '...'
+    });
     this.documentContent = content;
     this.resetChat(); // Reset chat when document content changes
   }
 
   private resetChat() {
     try {
+      console.log('🔄 Resetting chat session');
       this.chat = this.model.startChat({
         history: [],
         generationConfig: {
@@ -95,8 +115,9 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
           topK: 40,
         },
       });
+      console.log('✅ Chat session reset successfully');
     } catch (error) {
-      console.error('Error resetting chat:', error);
+      console.error('❌ Error resetting chat:', error);
       throw new Error('Failed to reset chat service');
     }
   }
@@ -163,11 +184,31 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
       // Add the user's message
       const fullPrompt = `${context}\n\nUser Query: ${message}\n\nRemember: Only answer using the information provided above. Always cite your source.`;
 
+      console.log('📤 Sending prompt to Gemini:', {
+        messageLength: message.length,
+        contextLength: context.length,
+        fullPromptLength: fullPrompt.length,
+        availableDataSources: {
+          hasApplicationData: !!this.applicationData,
+          hasDocumentContent: !!this.documentContent
+        },
+        timestamp: new Date().toISOString()
+      });
+
+      console.log('📝 Full Prompt:', fullPrompt);
+
       const result = await this.chat.sendMessage(fullPrompt);
       const response = await result.response;
+      
+      console.log('📥 Received response from Gemini:', {
+        responseLength: response.text().length,
+        preview: response.text().substring(0, 100) + '...',
+        timestamp: new Date().toISOString()
+      });
+
       return response.text();
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
       throw new Error('Failed to send message');
     }
   }
