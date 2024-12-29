@@ -112,9 +112,15 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
       
       // Add strict instruction about using only provided information
       context += `You are an AI assistant that can ONLY answer questions using the information provided below. 
-      If the answer cannot be found in the provided information, respond with "I apologize, but I can only answer based on the information in the application data and documents, and I don't see that information in the provided content."
-      DO NOT make assumptions or provide information from outside these sources.
+      For every response:
+      1. Start with "## Answer" heading
+      2. Clearly state which source you found the information in (Application Data or Document Content)
+      3. If information is not found, respond with:
+         "> Note: This information is not available in the provided application data or documents."
+      4. If you find partial information, clearly state what was found and what was missing
+      5. Use quotes when directly referencing content
       
+      DO NOT make assumptions or provide information from outside these sources.
       `;
 
       // Add role context
@@ -146,17 +152,16 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
       }
 
       // Add formatting instructions
-      context += `\nFormat your response using markdown syntax:
-      - Use ## for section headings
-      - Use * or ** for emphasis
-      - Use - or * for bullet points
-      - Use > for important quotes or notes
-      - Use \`code\` for technical terms or values
-      - Structure your response clearly with proper spacing
-      - Always cite whether your answer comes from the application data or document content\n\n`;
+      context += `\nFormat your response using markdown:
+      - Always start with "## Answer"
+      - Use "> Source: ..." to cite where information was found
+      - Use bullet points for listing information
+      - Use quotes for direct references
+      - If information is missing, use "> Note: ..." format
+      - Keep responses concise and focused\n\n`;
 
       // Add the user's message
-      const fullPrompt = `${context}\n\nUser Query: ${message}\n\nRemember: Only answer using the information provided above. If the information isn't in the sources provided, say so.`;
+      const fullPrompt = `${context}\n\nUser Query: ${message}\n\nRemember: Only answer using the information provided above. Always cite your source.`;
 
       const result = await this.chat.sendMessage(fullPrompt);
       const response = await result.response;
