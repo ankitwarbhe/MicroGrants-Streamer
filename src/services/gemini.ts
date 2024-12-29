@@ -212,6 +212,36 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
       // Add the user's message
       const fullPrompt = `${context}\n\nUser Query: ${message}\n\nRemember: Only answer using the information provided above. Always cite your source.`;
 
+      // Log the full prompt in a readable format
+      console.group('📝 Full Prompt Details');
+      console.log('%c=== SYSTEM INSTRUCTIONS ===', 'color: #2563eb; font-weight: bold');
+      console.log(context.split('\n\n')[0]); // Instructions part
+      
+      console.log('%c=== ROLE CONTEXT ===', 'color: #2563eb; font-weight: bold');
+      console.log(`Role: ${this.isAdmin ? 'Admin' : 'User'}`);
+      console.log(`Page: ${this.currentPage}`);
+      
+      console.log('%c=== AVAILABLE DATA SOURCES ===', 'color: #2563eb; font-weight: bold');
+      if (this.applicationData) console.log('- Application Database Data');
+      if (this.documentContent) console.log('- Document Content');
+      
+      if (this.applicationData) {
+        console.log('%c=== APPLICATION DATA ===', 'color: #2563eb; font-weight: bold');
+        console.log(this.applicationData);
+      }
+      
+      if (this.documentContent) {
+        console.log('%c=== DOCUMENT CONTENT ===', 'color: #2563eb; font-weight: bold');
+        console.log(this.documentContent);
+      }
+      
+      console.log('%c=== USER QUERY ===', 'color: #2563eb; font-weight: bold');
+      console.log(message);
+      
+      console.log('%c=== FULL RAW PROMPT ===', 'color: #2563eb; font-weight: bold');
+      console.log(fullPrompt);
+      console.groupEnd();
+
       console.log('📤 Sending prompt to Gemini:', {
         messageLength: message.length,
         contextLength: context.length,
