@@ -94,6 +94,9 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
     GREETINGS[Math.floor(Math.random() * GREETINGS.length)]
   );
 
+  // Add state for showing suggested questions
+  const [showSuggestions, setShowSuggestions] = useState(true);
+
   // Get current page from pathname
   const getCurrentPage = () => {
     const path = location.pathname;
@@ -155,10 +158,12 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
       newQuestions = SAMPLE_QUESTIONS[Math.floor(Math.random() * SAMPLE_QUESTIONS.length)];
     } while (newQuestions === currentQuestions);
     setCurrentQuestions(newQuestions);
+    setShowSuggestions(true);
   };
 
   const handleQuestionClick = async (question: string) => {
     setInputMessage(question);
+    setShowSuggestions(false);
     await handleSubmit(null, question);
     refreshQuestions();
   };
@@ -239,21 +244,6 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
                       : "I'll help you with your application using the available data and documents."}
                   </p>
                 </div>
-                
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs font-medium mb-3 text-gray-700">Quick Questions:</p>
-                  <div className="space-y-2">
-                    {currentQuestions.map((question, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleQuestionClick(question)}
-                        className="w-full text-left p-2 rounded-md text-xs bg-white border border-gray-200 hover:border-indigo-500 hover:text-indigo-600 transition-colors duration-150 ease-in-out"
-                      >
-                        {question}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
             )}
             {messages.map((message, index) => (
@@ -289,6 +279,24 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
             )}
             <div ref={messagesEndRef} />
           </div>
+
+          {/* Suggested Questions - Show after each answer */}
+          {showSuggestions && messages.length > 0 && (
+            <div className="border-t border-gray-100 p-3 bg-gray-50">
+              <p className="text-xs font-medium text-gray-700 mb-2">Suggested Questions:</p>
+              <div className="space-y-2">
+                {currentQuestions.map((question, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleQuestionClick(question)}
+                    className="w-full text-left p-2 rounded-md text-xs bg-white border border-gray-200 hover:border-indigo-500 hover:text-indigo-600 transition-colors duration-150 ease-in-out"
+                  >
+                    {question}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Input */}
           <form onSubmit={handleSubmit} className="p-3 border-t">
