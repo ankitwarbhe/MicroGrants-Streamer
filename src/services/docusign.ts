@@ -394,7 +394,7 @@ export class DocuSignService {
           accessToken: access_token,
           envelopeId,
           includeContent: true,
-          format: 'text'  // Request text format instead of base64
+          format: 'pdf'  // Request PDF format
         })
       });
 
@@ -415,26 +415,72 @@ export class DocuSignService {
       // Check for documentBase64 in response
       if (response?.documentBase64) {
         try {
+          // Convert base64 to text
           const decodedBytes = Buffer.from(response.documentBase64, 'base64');
           const decodedText = decodedBytes.toString('utf-8');
-          console.log('📄 Document content decoded successfully:', {
+
+          // Extract text content between BT/ET markers (text objects in PDF)
+          const textContent = decodedText
+            .split(/BT[\r\n]+/)  // Split by Begin Text markers
+            .slice(1)  // Remove first part (before first BT)
+            .map(part => {
+              const textPart = part.split(/[\r\n]+ET/)[0];  // Get content before ET
+              return textPart
+                .replace(/\[(.*?)\]/g, '$1')  // Remove square brackets around text
+                .replace(/[\\()<>{}[\]\/]|TJ|Tj/g, ' ')  // Remove PDF operators and brackets
+                .replace(/\s+/g, ' ')  // Normalize whitespace
+                .trim();
+            })
+            .filter(part => {
+              // Keep only parts that have readable text
+              const hasReadableText = /[a-zA-Z0-9]/.test(part);
+              const isNotJustNumbers = !/^\s*[\d\s.]+\s*$/.test(part);
+              return part.length > 0 && hasReadableText && isNotJustNumbers;
+            })
+            .join('\n');
+
+          console.log('📄 Extracted text content:', {
             decodedLength: decodedText.length,
-            preview: decodedText.substring(0, 100) + '...'
+            extractedLength: textContent.length,
+            preview: textContent.substring(0, 100) + '...'
           });
-          return decodedText;
+
+          if (textContent.length > 0) {
+            return textContent;
+          }
+          
+          // If no text content found, try extracting from streams
+          const streamContent = decodedText
+            .split(/stream[\r\n]+/)
+            .filter((_, index) => index % 2 === 1)
+            .map(part => {
+              return part
+                .split(/[\r\n]+endstream/)[0]
+                .replace(/[^\x20-\x7E\s]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            })
+            .filter(part => part.length > 0 && /[a-zA-Z0-9]/.test(part))
+            .join('\n');
+
+          if (streamContent.length > 0) {
+            console.log('📄 Extracted stream content:', {
+              length: streamContent.length,
+              preview: streamContent.substring(0, 100) + '...'
+            });
+            return streamContent;
+          }
         } catch (decodeError) {
           console.error('❌ Error decoding documentBase64:', decodeError);
-          // Return the original base64 content if decoding fails
-          return response.documentBase64;
         }
       }
       
-      // If no documentBase64, check for content field
+      // If no documentBase64 or extraction failed, check for content field
       if (response?.content) {
         return response.content;
       }
       
-      console.warn('⚠️ No document content found in response');
+      console.warn('⚠️ No readable content found in document');
       return '';
     } catch (error) {
       console.error('❌ Error fetching document content:', error);
