@@ -145,12 +145,28 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
         this.documentContent = '';
         return;
       }
+
+      // Try to extract meaningful text from the content
+      let processedContent = content;
+      
+      // If it looks like PDF content, try to extract text
+      if (content.includes('%PDF') || content.includes('%%EOF')) {
+        console.log('📄 Detected PDF-like content, extracting text...');
+        // Extract text between PDF markers, remove binary data
+        processedContent = content
+          .replace(/%PDF[^]*%%EOF/g, '') // Remove PDF wrapper
+          .replace(/[\x00-\x1F\x7F-\xFF]/g, ' ') // Remove binary characters
+          .replace(/\s+/g, ' ') // Normalize whitespace
+          .trim();
+      }
       
       console.log('📄 Setting document content:', {
-        contentLength: content.length,
-        preview: content.substring(0, 100) + '...'
+        originalLength: content.length,
+        processedLength: processedContent.length,
+        preview: processedContent.substring(0, 100) + '...'
       });
-      this.documentContent = content;
+
+      this.documentContent = processedContent;
       this.resetChat(); // Reset chat when document content changes
     } catch (error) {
       console.error('❌ Error setting document content:', error);

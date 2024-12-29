@@ -148,13 +148,43 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
       // If we have document content, set it in the chat service
       if (documentContent) {
         try {
-          console.log('📄 Setting document content:', {
-            contentLength: documentContent?.length || 0,
-            preview: documentContent ? documentContent.substring(0, 100) + '...' : 'No content'
-          });
-          chatServiceRef.setDocumentContent(documentContent);
+          // Handle if documentContent is a stream or buffer
+          const processContent = async () => {
+            let textContent = '';
+            
+            if (documentContent instanceof Buffer) {
+              console.log('📄 Processing Buffer content');
+              textContent = documentContent.toString('utf-8');
+            } else if (typeof documentContent === 'string') {
+              console.log('📄 Processing String content');
+              // Check if it's base64
+              if (documentContent.match(/^[A-Za-z0-9+/=]+$/)) {
+                try {
+                  const decodedBytes = Buffer.from(documentContent, 'base64');
+                  textContent = decodedBytes.toString('utf-8');
+                } catch (decodeError) {
+                  console.warn('⚠️ Base64 decode failed, using content as is');
+                  textContent = documentContent;
+                }
+              } else {
+                textContent = documentContent;
+              }
+            } else {
+              console.warn('⚠️ Unexpected document content type:', typeof documentContent);
+              return;
+            }
+
+            console.log('📄 Processed document content:', {
+              contentLength: textContent.length,
+              preview: textContent.substring(0, 100) + '...'
+            });
+            
+            chatServiceRef?.setDocumentContent(textContent);
+          };
+
+          processContent();
         } catch (err) {
-          console.error('❌ Error setting document content:', err);
+          console.error('❌ Error processing document content:', err);
           console.warn('Will continue without document content');
         }
       }
@@ -163,25 +193,17 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
         console.log('🔄 Fetching document content for envelope:', envelopeId);
         const fetchDocumentContent = async () => {
           try {
-            const documentBase64 = await docuSignService.getSignedDocument(envelopeId);
-            if (!documentBase64) {
+            const content = await docuSignService.getDocumentContent(envelopeId);
+            if (!content) {
               console.warn('⚠️ No document content received');
               return;
             }
             
-            // Convert base64 to text for the chatbot
-            try {
-              const decodedBytes = Buffer.from(documentBase64, 'base64');
-              const decodedText = decodedBytes.toString('utf-8');
-              console.log('✅ Document content decoded:', {
-                decodedLength: decodedText.length,
-                preview: decodedText.substring(0, 100) + '...'
-              });
-              chatServiceRef?.setDocumentContent(decodedText);
-            } catch (decodeError) {
-              console.error('❌ Error decoding document content:', decodeError);
-              console.warn('Will continue without document content');
-            }
+            console.log('✅ Document content received:', {
+              contentLength: content.length,
+              preview: content.substring(0, 100) + '...'
+            });
+            chatServiceRef?.setDocumentContent(content);
           } catch (err) {
             console.error('❌ Error fetching document content:', err);
             console.warn('Will continue without document content');
@@ -312,9 +334,9 @@ We apologize for any inconvenience. Your application data is safe and will be av
   return (
     <div className="fixed bottom-4 right-4 z-50">
       {isOpen && (
-        <div className="absolute bottom-16 right-0 w-96 h-[500px] bg-white rounded-lg shadow-xl flex flex-col">
+        <div className="absolute bottom-16 right-0 w-96 h-[500px] bg-white rounded-lg shadow-xl flex flex-col border-2 border-black">
           {/* Header */}
-          <div className="flex items-center justify-between p-3 border-b">
+          <div className="flex items-center justify-between p-3 border-b border-black">
             <h3 className="text-sm font-semibold text-gray-800">
               {isAdmin ? 'Admin Assistant' : 'Grant Assistant'}
             </h3>
