@@ -159,11 +159,18 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
           .replace(/\s+/g, ' ') // Normalize whitespace
           .trim();
       }
+
+      // Remove any remaining non-printable characters
+      processedContent = processedContent
+        .replace(/[^\x20-\x7E\s]/g, ' ') // Keep only printable ASCII and whitespace
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
       
       console.log('📄 Setting document content:', {
         originalLength: content.length,
         processedLength: processedContent.length,
-        preview: processedContent.substring(0, 100) + '...'
+        preview: processedContent.substring(0, 100) + '...',
+        hasText: processedContent.length > 0
       });
 
       this.documentContent = processedContent;

@@ -145,44 +145,34 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
       chatServiceRef.setUser(userId, isAdmin);
       chatServiceRef.setCurrentPage(currentPage, applicationId);
 
-      // If we have document content, set it in the chat service
+      // If we have document content, process and set it
       if (documentContent) {
         try {
-          // Handle if documentContent is a stream or buffer
-          const processContent = async () => {
-            let textContent = '';
-            
-            if (documentContent instanceof Buffer) {
-              console.log('📄 Processing Buffer content');
-              textContent = documentContent.toString('utf-8');
-            } else if (typeof documentContent === 'string') {
-              console.log('📄 Processing String content');
-              // Check if it's base64
-              if (documentContent.match(/^[A-Za-z0-9+/=]+$/)) {
-                try {
-                  const decodedBytes = Buffer.from(documentContent, 'base64');
-                  textContent = decodedBytes.toString('utf-8');
-                } catch (decodeError) {
-                  console.warn('⚠️ Base64 decode failed, using content as is');
-                  textContent = documentContent;
-                }
-              } else {
-                textContent = documentContent;
-              }
-            } else {
-              console.warn('⚠️ Unexpected document content type:', typeof documentContent);
-              return;
+          console.log('📄 Processing provided document content');
+          let textContent = '';
+          
+          // Check if it's base64
+          if (typeof documentContent === 'string' && documentContent.match(/^[A-Za-z0-9+/=]+$/)) {
+            try {
+              console.log('🔄 Attempting to decode base64 content');
+              const decodedBytes = Buffer.from(documentContent, 'base64');
+              textContent = decodedBytes.toString('utf-8');
+              console.log('✅ Successfully decoded base64 content');
+            } catch (decodeError) {
+              console.warn('⚠️ Base64 decode failed, using content as is');
+              textContent = documentContent;
             }
+          } else {
+            textContent = String(documentContent);
+          }
 
-            console.log('📄 Processed document content:', {
-              contentLength: textContent.length,
-              preview: textContent.substring(0, 100) + '...'
-            });
-            
-            chatServiceRef?.setDocumentContent(textContent);
-          };
-
-          processContent();
+          console.log('📄 Setting document content:', {
+            originalLength: documentContent.length,
+            processedLength: textContent.length,
+            preview: textContent.substring(0, 100) + '...'
+          });
+          
+          chatServiceRef.setDocumentContent(textContent);
         } catch (err) {
           console.error('❌ Error processing document content:', err);
           console.warn('Will continue without document content');
@@ -193,17 +183,28 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
         console.log('🔄 Fetching document content for envelope:', envelopeId);
         const fetchDocumentContent = async () => {
           try {
-            const content = await docuSignService.getDocumentContent(envelopeId);
-            if (!content) {
+            const documentBase64 = await docuSignService.getSignedDocument(envelopeId);
+            if (!documentBase64) {
               console.warn('⚠️ No document content received');
               return;
             }
             
-            console.log('✅ Document content received:', {
-              contentLength: content.length,
-              preview: content.substring(0, 100) + '...'
-            });
-            chatServiceRef?.setDocumentContent(content);
+            try {
+              console.log('🔄 Processing fetched document content');
+              const decodedBytes = Buffer.from(documentBase64, 'base64');
+              const textContent = decodedBytes.toString('utf-8');
+              
+              console.log('📄 Setting fetched document content:', {
+                base64Length: documentBase64.length,
+                decodedLength: textContent.length,
+                preview: textContent.substring(0, 100) + '...'
+              });
+              
+              chatServiceRef?.setDocumentContent(textContent);
+            } catch (decodeError) {
+              console.error('❌ Error decoding fetched document content:', decodeError);
+              console.warn('Will continue without document content');
+            }
           } catch (err) {
             console.error('❌ Error fetching document content:', err);
             console.warn('Will continue without document content');
