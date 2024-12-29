@@ -1187,8 +1187,8 @@ export function ApplicationDetails() {
         </div>
       )}
 
-      {/* ChatBot - Show for both admin and application owner */}
-      {user && application && (
+      {/* ChatBot - Show only after send for signature status */}
+      {user && application && ['pending_signature', 'signed'].includes(application.status) && (
         <div className="fixed bottom-4 right-4">
           <ChatBot 
             userId={user.id} 
