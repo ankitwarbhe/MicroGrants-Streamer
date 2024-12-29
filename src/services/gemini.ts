@@ -142,9 +142,11 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
       
       console.log('📄 Setting document content:', {
         contentLength: content.length,
+        isPdfData: content.startsWith('data:application/pdf;base64,'),
         preview: content.substring(0, 100) + '...'
       });
 
+      // Store the full PDF data URL
       this.documentContent = content;
       this.resetChat(); // Reset chat when document content changes
     } catch (error) {
@@ -164,7 +166,7 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
           temperature: 0.7,
           topP: 0.8,
           topK: 40,
-        },
+        }
       });
       console.log('✅ Chat session reset successfully');
     } catch (error) {
@@ -209,7 +211,7 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
         context += `1. Application Database Data\n`;
       }
       if (this.documentContent) {
-        context += `2. Document Content\n`;
+        context += `2. Document Content (PDF format)\n`;
       } else {
         context += `Note: Document content is not yet available.\n`;
       }
@@ -222,7 +224,7 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
 
       // Add document content if available
       if (this.documentContent) {
-        context += `\n=== DOCUMENT CONTENT ===\n${this.documentContent}\n\n`;
+        context += `\n=== DOCUMENT CONTENT ===\nA PDF document is attached to this conversation. Please analyze its contents to answer questions about the document.\n\n`;
       }
 
       // Add formatting instructions
@@ -248,7 +250,7 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
       
       console.log('%c=== AVAILABLE DATA SOURCES ===', 'color: #2563eb; font-weight: bold');
       if (this.applicationData) console.log('- Application Database Data');
-      if (this.documentContent) console.log('- Document Content');
+      if (this.documentContent) console.log('- Document Content (PDF)');
       
       if (this.applicationData) {
         console.log('%c=== APPLICATION DATA ===', 'color: #2563eb; font-weight: bold');
@@ -257,7 +259,7 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
       
       if (this.documentContent) {
         console.log('%c=== DOCUMENT CONTENT ===', 'color: #2563eb; font-weight: bold');
-        console.log(this.documentContent);
+        console.log('PDF data available');
       }
       
       console.log('%c=== USER QUERY ===', 'color: #2563eb; font-weight: bold');
@@ -278,7 +280,18 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
         timestamp: new Date().toISOString()
       });
 
-      const result = await this.chat.sendMessage(fullPrompt);
+      // If we have PDF data, include it as a part
+      const parts: any[] = [{ text: fullPrompt }];
+      if (this.documentContent && this.documentContent.startsWith('data:application/pdf;base64,')) {
+        parts.push({
+          inlineData: {
+            mimeType: 'application/pdf',
+            data: this.documentContent.replace('data:application/pdf;base64,', '')
+          }
+        });
+      }
+
+      const result = await this.chat.sendMessage(parts);
       const response = await result.response;
       
       console.log('📥 Received response from Gemini:', {

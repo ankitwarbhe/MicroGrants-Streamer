@@ -144,42 +144,22 @@ export function ApplicationDetails() {
       const fetchDocContent = async () => {
         try {
           if (!application.envelope_id) return;
-          const content = await docuSignService.getDocumentContent(application.envelope_id);
+          const documentBase64 = await docuSignService.getSignedDocument(application.envelope_id);
           
-          if (!content) {
+          if (!documentBase64) {
             console.warn('No document content received');
             setDocumentContent('');
             return;
           }
 
-          // Extract text content from PDF
-          try {
-            // Split by stream markers and extract text content
-            const textContent = content
-              .split(/stream[\r\n]+/)  // Split by stream markers
-              .filter((_, index) => index % 2 === 1)  // Keep content between stream markers
-              .map(part => {
-                // Clean up each text section
-                return part
-                  .split(/[\r\n]+endstream/)[0]  // Remove endstream
-                  .replace(/^\s+|\s+$/g, '')     // Trim whitespace
-                  .replace(/[^\x20-\x7E\s]/g, '') // Keep only printable ASCII
-                  .replace(/\s+/g, ' ');         // Normalize spaces
-              })
-              .filter(part => part.length > 0)   // Remove empty parts
-              .join('\n');
-
-            console.log('📄 Extracted text content:', {
-              type: typeof textContent,
-              length: textContent.length,
-              preview: textContent.substring(0, 100)
-            });
-            
-            setDocumentContent(textContent);
-          } catch (extractError) {
-            console.error('Error extracting text from PDF:', extractError);
-            setDocumentContent('');
-          }
+          // Create PDF data URL
+          const pdfDataUrl = `data:application/pdf;base64,${documentBase64}`;
+          console.log('📄 PDF data URL created for chatbot:', {
+            dataUrlLength: pdfDataUrl.length,
+            preview: pdfDataUrl.substring(0, 100) + '...'
+          });
+          
+          setDocumentContent(pdfDataUrl);
         } catch (err) {
           console.error('Error fetching document content:', err);
           setDocumentContent('');
