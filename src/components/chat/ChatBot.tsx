@@ -240,11 +240,33 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
     } catch (error) {
       console.error('❌ Chat error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to get response from AI. Please try again.';
+      let errorMessage = 'An unexpected error occurred. Please try again later.';
+      
+      // Check if it's a quota exceeded error
+      if (error instanceof Error && error.message.includes('quota')) {
+        errorMessage = `## API Quota Exceeded
+
+> **Service Temporarily Unavailable**
+
+The AI service is currently unavailable due to high demand. This typically happens when:
+- The daily API quota has been reached
+- Too many requests were made in a short time
+- The service is experiencing heavy load
+
+**What you can do:**
+1. Wait a few minutes and try again
+2. Try refreshing the page
+3. If the issue persists, please try again later or contact support
+
+We apologize for any inconvenience. Your application data is safe and will be available when the service resumes.`;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       setError(errorMessage);
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', content: `Error: ${errorMessage}` }
+        { role: 'assistant', content: errorMessage }
       ]);
     } finally {
       setIsLoading(false);

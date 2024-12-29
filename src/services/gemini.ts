@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, GenerativeModel, ChatSession } from '@google/generative-ai';
+import { GoogleGenerativeAI, GenerativeModel, ChatSession, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { supabase } from '../lib/supabase';
 import { getApplicationById } from './applications';
 import type { DisbursementStep } from '../types';
@@ -26,7 +26,15 @@ export class GeminiChatService {
   private applicationData: string = '';
 
   constructor() {
-    this.model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    this.model = genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      generationConfig: {
+        maxOutputTokens: 2048,
+        temperature: 0.7,
+        topP: 0.8,
+        topK: 40,
+      }
+    });
     this.resetChat();
   }
 
@@ -123,11 +131,11 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
 
   private resetChat() {
     try {
-      console.log('🔄 Resetting chat session');
+      console.log('🔄 Resetting chat session with Gemini 1.5 Flash model');
       this.chat = this.model.startChat({
         history: [],
         generationConfig: {
-          maxOutputTokens: 1000,
+          maxOutputTokens: 2048,
           temperature: 0.7,
           topP: 0.8,
           topK: 40,
