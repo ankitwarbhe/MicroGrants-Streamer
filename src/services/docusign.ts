@@ -345,7 +345,8 @@ export class DocuSignService {
           accountId: env.accountId,
           accessToken: access_token,
           envelopeId,
-          includeContent: true
+          includeContent: true,
+          format: 'text'  // Request text format instead of base64
         })
       });
 
@@ -355,6 +356,20 @@ export class DocuSignService {
       }
 
       const { content } = await documentResponse.json();
+      
+      // If content is base64 encoded, decode it
+      if (content && typeof content === 'string' && content.match(/^[A-Za-z0-9+/=]+$/)) {
+        try {
+          const decodedBytes = Buffer.from(content, 'base64');
+          const decodedText = decodedBytes.toString('utf-8');
+          console.log('📄 Document content decoded successfully');
+          return decodedText;
+        } catch (decodeError) {
+          console.error('Error decoding content:', decodeError);
+          return content;
+        }
+      }
+      
       return content;
     } catch (error) {
       console.error('Error fetching document content:', error);

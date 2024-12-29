@@ -28,13 +28,13 @@ export class GeminiChatService {
   constructor() {
     this.model = genAI.getGenerativeModel({ 
       model: 'gemini-1.5-flash',
-      generationConfig: {
+        generationConfig: {
         maxOutputTokens: 2048,
-        temperature: 0.7,
-        topP: 0.8,
-        topK: 40,
+          temperature: 0.7,
+          topP: 0.8,
+          topK: 40,
       }
-    });
+      });
     this.resetChat();
   }
 
@@ -48,44 +48,57 @@ export class GeminiChatService {
     console.log('📍 Setting current page:', page);
     this.currentPage = page;
     if (page.includes('applications/')) {
-      const applicationId = page.split('applications/')[1];
+      // Extract application ID, handling both /applications/123 and /applications/123/
+      const match = page.match(/applications\/([^\/]+)/);
+      const applicationId = match ? match[1] : null;
+      
       if (applicationId) {
-        console.log('🔄 Fetching application data for:', applicationId);
+        console.log('🔄 Fetching application data for ID:', applicationId);
         this.fetchApplicationData(applicationId);
+      } else {
+        console.warn('⚠️ Could not extract application ID from path:', page);
       }
     }
   }
 
   private async fetchApplicationData(applicationId: string) {
     try {
+      console.log('🔍 Attempting to fetch application data for ID:', applicationId);
       const application = await getApplicationById(applicationId);
-      if (application) {
-        console.log('✅ Application data fetched:', {
-          id: application.id,
-          status: application.status,
-          hasPaymentDetails: !!application.payment_details,
-          hasDisbursementSteps: !!application.disbursement_steps
-        });
-        
+      
+      if (!application) {
+        console.warn('⚠️ No application found for ID:', applicationId);
+        return;
+      }
+
+      console.log('📊 Raw application data:', application);
+      console.log('✅ Application data fetched:', {
+        id: application.id,
+        status: application.status,
+        hasPaymentDetails: !!application.payment_details,
+        hasDisbursementSteps: !!application.disbursement_steps
+      });
+      
+      try {
         this.applicationData = `
 ## Application Details
 - ID: ${application.id}
-- Title: ${application.title}
-- Description: ${application.description}
-- Amount Requested: ${application.amount_requested}
-- Currency: ${application.currency}
-- Status: ${application.status}
-- Applicant: ${application.first_name} ${application.last_name}
-- Email: ${application.user_email}
-- Created: ${new Date(application.created_at).toLocaleDateString()}
+- Title: ${application.title || 'N/A'}
+- Description: ${application.description || 'N/A'}
+- Amount Requested: ${application.amount_requested || 'N/A'}
+- Currency: ${application.currency || 'N/A'}
+- Status: ${application.status || 'N/A'}
+- Applicant: ${application.first_name || ''} ${application.last_name || ''}
+- Email: ${application.user_email || 'N/A'}
+- Created: ${application.created_at ? new Date(application.created_at).toLocaleDateString() : 'N/A'}
 ${application.feedback ? `- Feedback: ${application.feedback}` : ''}
 ${application.payment_details ? `
 ## Payment Details
-- Beneficiary Name: ${application.payment_details.beneficiary_name}
-- Bank Branch: ${application.payment_details.bank_branch}
-- Account Type: ${application.payment_details.account_type}
-- IFSC Code: ${application.payment_details.ifsc_code}
-- UPI ID: ${application.payment_details.upi_id}` : ''}
+- Beneficiary Name: ${application.payment_details.beneficiary_name || 'N/A'}
+- Bank Branch: ${application.payment_details.bank_branch || 'N/A'}
+- Account Type: ${application.payment_details.account_type || 'N/A'}
+- IFSC Code: ${application.payment_details.ifsc_code || 'N/A'}
+- UPI ID: ${application.payment_details.upi_id || 'N/A'}` : ''}
 ${application.disbursement_steps ? `
 ## Disbursement Status
 ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label}: ${step.status}`).join('\n')}` : ''}`;
@@ -96,9 +109,15 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
         });
         
         this.resetChat(); // Reset chat with new application data
+      } catch (formatError) {
+        console.error('❌ Error formatting application data:', formatError);
+        console.log('🔍 Application object structure:', JSON.stringify(application, null, 2));
       }
     } catch (error) {
       console.error('❌ Error fetching application data:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
     }
   }
 
