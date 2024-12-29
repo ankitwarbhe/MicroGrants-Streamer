@@ -94,13 +94,24 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
     }
   }
 
-  setDocumentContent(content: string) {
-    console.log('📄 Setting document content:', {
-      contentLength: content.length,
-      preview: content.substring(0, 100) + '...'
-    });
-    this.documentContent = content;
-    this.resetChat(); // Reset chat when document content changes
+  setDocumentContent(content: string | null | undefined) {
+    try {
+      if (!content) {
+        console.log('⚠️ No document content provided');
+        this.documentContent = '';
+        return;
+      }
+      
+      console.log('📄 Setting document content:', {
+        contentLength: content?.length || 0,
+        preview: content ? content.substring(0, 100) + '...' : 'No content'
+      });
+      this.documentContent = content;
+      this.resetChat(); // Reset chat when document content changes
+    } catch (error) {
+      console.error('❌ Error setting document content:', error);
+      this.documentContent = '';
+    }
   }
 
   private resetChat() {

@@ -127,11 +127,16 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
 
       // If we have document content, set it in the chat service
       if (documentContent) {
-        console.log('📄 Setting document content:', {
-          contentLength: documentContent.length,
-          preview: documentContent.substring(0, 100) + '...'
-        });
-        chatServiceRef.setDocumentContent(documentContent);
+        try {
+          console.log('📄 Setting document content:', {
+            contentLength: documentContent?.length || 0,
+            preview: documentContent ? documentContent.substring(0, 100) + '...' : 'No content'
+          });
+          chatServiceRef.setDocumentContent(documentContent);
+        } catch (err) {
+          console.error('❌ Error setting document content:', err);
+          setError('Failed to process document content.');
+        }
       }
       // If we have an envelopeId but no content, fetch it
       else if (envelopeId) {
@@ -139,9 +144,12 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
         const fetchDocumentContent = async () => {
           try {
             const content = await docuSignService.getDocumentContent(envelopeId);
+            if (!content) {
+              throw new Error('No document content received');
+            }
             console.log('✅ Document content fetched:', {
-              contentLength: content.length,
-              preview: content.substring(0, 100) + '...'
+              contentLength: content?.length || 0,
+              preview: content ? content.substring(0, 100) + '...' : 'No content'
             });
             chatServiceRef?.setDocumentContent(content);
           } catch (err) {
