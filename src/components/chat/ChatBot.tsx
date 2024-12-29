@@ -147,7 +147,8 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
           chatServiceRef.setDocumentContent(documentContent);
         } catch (err) {
           console.error('❌ Error setting document content:', err);
-          setError('Failed to process document content.');
+          // Don't set error state, just log it
+          console.warn('Will continue without document content');
         }
       }
       // If we have an envelopeId but no content, fetch it
@@ -155,9 +156,10 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
         console.log('🔄 Fetching document content for envelope:', envelopeId);
         const fetchDocumentContent = async () => {
           try {
-            const content = await docuSignService.getDocumentContent(envelopeId);
+            const content = await docuSignService.getSignedDocument(envelopeId);
             if (!content) {
-              throw new Error('No document content received');
+              console.warn('⚠️ No document content received, continuing with application data only');
+              return;
             }
             console.log('✅ Document content fetched:', {
               contentLength: content?.length || 0,
@@ -166,16 +168,18 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
             chatServiceRef?.setDocumentContent(content);
           } catch (err) {
             console.error('❌ Error fetching document content:', err);
-            setError('Failed to load document content for chat assistance.');
+            // Don't set error state, just log it
+            console.warn('Will continue without document content');
           }
         };
         fetchDocumentContent();
       }
 
+      // Only set error if chat service fails to initialize
       setError(null);
     } catch (err) {
       console.error('❌ Error initializing chat service:', err);
-      setError('Failed to initialize chat service. Please check your API key configuration.');
+      setError('Failed to initialize chat service. Please try again.');
     }
   }, [userId, isAdmin, location.pathname, envelopeId, documentContent]);
 

@@ -97,19 +97,26 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
   setDocumentContent(content: string | null | undefined) {
     try {
       if (!content) {
-        console.log('⚠️ No document content provided');
+        console.log('⚠️ No document content provided, chat will use application data only');
+        this.documentContent = '';
+        return;
+      }
+      
+      if (typeof content !== 'string' || content.trim() === '') {
+        console.log('⚠️ Empty document content provided, chat will use application data only');
         this.documentContent = '';
         return;
       }
       
       console.log('📄 Setting document content:', {
-        contentLength: content?.length || 0,
-        preview: content ? content.substring(0, 100) + '...' : 'No content'
+        contentLength: content.length,
+        preview: content.substring(0, 100) + '...'
       });
       this.documentContent = content;
       this.resetChat(); // Reset chat when document content changes
     } catch (error) {
       console.error('❌ Error setting document content:', error);
+      console.log('⚠️ Continuing with application data only');
       this.documentContent = '';
     }
   }
@@ -170,6 +177,8 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
       }
       if (this.documentContent) {
         context += `2. Document Content\n`;
+      } else {
+        context += `Note: Document content is not yet available.\n`;
       }
       context += `\n`;
 
@@ -206,8 +215,6 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
         timestamp: new Date().toISOString()
       });
 
-      console.log('📝 Full Prompt:', fullPrompt);
-
       const result = await this.chat.sendMessage(fullPrompt);
       const response = await result.response;
       
@@ -220,7 +227,7 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
       return response.text();
     } catch (error) {
       console.error('❌ Error sending message:', error);
-      throw new Error('Failed to send message');
+      throw new Error('Failed to send message. Please try again.');
     }
   }
 } 
