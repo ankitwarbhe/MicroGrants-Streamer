@@ -47,6 +47,7 @@ export function AdminDashboard() {
   const [totalCount, setTotalCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState<'all' | Application['status']>('all');
   const { user } = useAuth();
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   
   const ITEMS_PER_PAGE = 5;
 
@@ -93,7 +94,7 @@ export function AdminDashboard() {
         let dataQuery = supabase
           .from('applications')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: sortOrder === 'asc' });
 
         // Add status filter if not 'all'
         if (statusFilter !== 'all') {
@@ -123,7 +124,7 @@ export function AdminDashboard() {
     if (user) {
       fetchApplications();
     }
-  }, [user, currentPage, statusFilter]);
+  }, [user, currentPage, statusFilter, sortOrder]);
 
   if (!user) {
     return (
@@ -296,7 +297,13 @@ export function AdminDashboard() {
                     Disbursement Status
                   </th>
                   <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
-                    Date
+                    <button 
+                      onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                      className="flex items-center gap-1 hover:text-gray-700"
+                    >
+                      Date
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </button>
                   </th>
                   <th scope="col" className="relative px-4 py-3 w-16">
                     <span className="sr-only">Actions</span>
