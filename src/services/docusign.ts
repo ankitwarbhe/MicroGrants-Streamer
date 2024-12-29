@@ -357,42 +357,39 @@ export class DocuSignService {
 
       const response = await documentResponse.json();
       
-      if (!response || !response.content) {
-        console.warn('No content in response:', response);
-        return '';
-      }
-
-      const { content } = response;
-      
-      // Log the content type and preview
-      console.log('📄 Raw content received:', {
-        type: typeof content,
-        length: content?.length,
-        isBase64: content && typeof content === 'string' && content.match(/^[A-Za-z0-9+/=]+$/),
-        preview: content?.substring?.(0, 100)
+      console.log('📄 Raw document response:', {
+        hasResponse: !!response,
+        keys: response ? Object.keys(response) : [],
+        hasDocumentBase64: !!response?.documentBase64,
+        preview: response?.documentBase64 ? response.documentBase64.substring(0, 100) + '...' : 'No content'
       });
 
-      // If content is base64 encoded, decode it
-      if (content && typeof content === 'string' && content.match(/^[A-Za-z0-9+/=]+$/)) {
+      // Check for documentBase64 in response
+      if (response?.documentBase64) {
         try {
-          const decodedBytes = Buffer.from(content, 'base64');
+          const decodedBytes = Buffer.from(response.documentBase64, 'base64');
           const decodedText = decodedBytes.toString('utf-8');
           console.log('📄 Document content decoded successfully:', {
             decodedLength: decodedText.length,
-            preview: decodedText.substring(0, 100)
+            preview: decodedText.substring(0, 100) + '...'
           });
           return decodedText;
         } catch (decodeError) {
-          console.error('Error decoding content:', decodeError);
-          // Return the original content if decoding fails
-          return content;
+          console.error('❌ Error decoding documentBase64:', decodeError);
+          // Return the original base64 content if decoding fails
+          return response.documentBase64;
         }
       }
       
-      // Return the content as is if it's not base64
-      return content || '';
+      // If no documentBase64, check for content field
+      if (response?.content) {
+        return response.content;
+      }
+      
+      console.warn('⚠️ No document content found in response');
+      return '';
     } catch (error) {
-      console.error('Error fetching document content:', error);
+      console.error('❌ Error fetching document content:', error);
       throw error;
     }
   }
