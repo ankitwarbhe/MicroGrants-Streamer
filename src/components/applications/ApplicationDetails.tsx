@@ -82,32 +82,35 @@ export function ApplicationDetails() {
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [showUpiQR, setShowUpiQR] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [documentContent, setDocumentContent] = useState<string>('');
 
   const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
   const isOwner = application?.user_id === user?.id;
 
-  useEffect(() => {
-    async function fetchApplication() {
-      if (!id) return;
-      try {
-        const data = await getApplicationById(id);
-        setApplication(data);
-        setEditedData({
-          title: data.title,
-          description: data.description,
-          amount_requested: data.amount_requested,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          currency: data.currency
-        });
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load application details');
-      } finally {
-        setLoading(false);
-      }
+  const fetchApplication = async () => {
+    if (!id) return;
+    try {
+      const data = await getApplicationById(id);
+      setApplication(data);
+      setEditedData({
+        title: data.title,
+        description: data.description,
+        amount_requested: data.amount_requested,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        currency: data.currency
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load application details');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    fetchApplication();
+  useEffect(() => {
+    if (id) {
+      fetchApplication();
+    }
   }, [id]);
 
   useEffect(() => {
@@ -128,6 +131,28 @@ export function ApplicationDetails() {
       setPaymentCompleted(true);
     }
   }, [application?.payment_completed]);
+
+  useEffect(() => {
+    if (id) {
+      fetchApplication();
+    }
+  }, [id]);
+
+  useEffect(() => {
+    // Fetch document content when application is loaded and has an envelope ID
+    if (application?.envelope_id) {
+      const fetchDocContent = async () => {
+        try {
+          if (!application.envelope_id) return;
+          const content = await docuSignService.getDocumentContent(application.envelope_id);
+          setDocumentContent(content);
+        } catch (err) {
+          console.error('Error fetching document content:', err);
+        }
+      };
+      fetchDocContent();
+    }
+  }, [application?.envelope_id]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -1110,11 +1135,15 @@ export function ApplicationDetails() {
         </div>
       )}
 
-      {user && (
-        <ChatBot 
-          userId={user.id} 
-          isAdmin={isAdmin}
-        />
+      {user && application && (
+        <div className="fixed bottom-4 right-4">
+          <ChatBot 
+            userId={user.id} 
+            isAdmin={isAdmin} 
+            envelopeId={application.envelope_id || undefined}
+            documentContent={documentContent}
+          />
+        </div>
       )}
 
       {/* Add UPI QR Code Modal */}

@@ -2,16 +2,19 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import { GeminiChatService, ChatMessage } from '../../services/gemini';
 import { useLocation } from 'react-router-dom';
+import { docuSignService } from '../../services/docusign';
 
 interface ChatBotProps {
   userId: string;
   isAdmin: boolean;
+  envelopeId?: string;
+  documentContent?: string;
 }
 
 // Create service instance outside component to prevent recreation
 let chatServiceRef: GeminiChatService | null = null;
 
-export function ChatBot({ userId, isAdmin }: ChatBotProps) {
+export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBotProps) {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -31,7 +34,7 @@ export function ChatBot({ userId, isAdmin }: ChatBotProps) {
     return path.replace('/', '');
   };
 
-  // Initialize chat service
+  // Initialize chat service with document content
   useEffect(() => {
     try {
       if (!chatServiceRef) {
@@ -42,12 +45,31 @@ export function ChatBot({ userId, isAdmin }: ChatBotProps) {
       console.log('Setting user and page context:', { userId, isAdmin, currentPage });
       chatServiceRef.setUser(userId, isAdmin);
       chatServiceRef.setCurrentPage(currentPage);
+
+      // If we have document content, set it in the chat service
+      if (documentContent) {
+        chatServiceRef.setDocumentContent(documentContent);
+      }
+      // If we have an envelopeId but no content, fetch it
+      else if (envelopeId) {
+        const fetchDocumentContent = async () => {
+          try {
+            const content = await docuSignService.getDocumentContent(envelopeId);
+            chatServiceRef?.setDocumentContent(content);
+          } catch (err) {
+            console.error('Error fetching document content:', err);
+            setError('Failed to load document content for chat assistance.');
+          }
+        };
+        fetchDocumentContent();
+      }
+
       setError(null);
     } catch (err) {
       console.error('Error initializing chat service:', err);
       setError('Failed to initialize chat service. Please check your API key configuration.');
     }
-  }, [userId, isAdmin, location.pathname]);
+  }, [userId, isAdmin, location.pathname, envelopeId, documentContent]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

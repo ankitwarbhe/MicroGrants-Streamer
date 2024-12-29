@@ -310,6 +310,57 @@ export class DocuSignService {
       throw error;
     }
   }
+
+  async getDocumentContent(envelopeId: string): Promise<string> {
+    try {
+      const authServerUrl = await this.getAuthServerUrl();
+
+      // First, get an access token
+      const authResponse = await fetch(`${authServerUrl}/api/docusign/auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          integrationKey: env.integrationKey,
+          userId: env.userId,
+          privateKey: env.privateKey
+        })
+      });
+
+      if (!authResponse.ok) {
+        const error = await authResponse.json();
+        throw new Error(error.message || 'Failed to authenticate');
+      }
+
+      const { access_token } = await authResponse.json();
+
+      // Get the document content
+      const documentResponse = await fetch(`${authServerUrl}/api/docusign/documents`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          accountId: env.accountId,
+          accessToken: access_token,
+          envelopeId,
+          includeContent: true
+        })
+      });
+
+      if (!documentResponse.ok) {
+        const error = await documentResponse.json();
+        throw new Error(error.message || 'Failed to get document content');
+      }
+
+      const { content } = await documentResponse.json();
+      return content;
+    } catch (error) {
+      console.error('Error fetching document content:', error);
+      throw error;
+    }
+  }
 }
 
 export const docuSignService = new DocuSignService(); 
