@@ -140,40 +140,12 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
         return;
       }
       
-      if (typeof content !== 'string' || content.trim() === '') {
-        console.log('⚠️ Empty document content provided, chat will use application data only');
-        this.documentContent = '';
-        return;
-      }
-
-      // Try to extract meaningful text from the content
-      let processedContent = content;
-      
-      // If it looks like PDF content, try to extract text
-      if (content.includes('%PDF') || content.includes('%%EOF')) {
-        console.log('📄 Detected PDF-like content, extracting text...');
-        // Extract text between PDF markers, remove binary data
-        processedContent = content
-          .replace(/%PDF[^]*%%EOF/g, '') // Remove PDF wrapper
-          .replace(/[\x00-\x1F\x7F-\xFF]/g, ' ') // Remove binary characters
-          .replace(/\s+/g, ' ') // Normalize whitespace
-          .trim();
-      }
-
-      // Remove any remaining non-printable characters
-      processedContent = processedContent
-        .replace(/[^\x20-\x7E\s]/g, ' ') // Keep only printable ASCII and whitespace
-        .replace(/\s+/g, ' ') // Normalize whitespace
-        .trim();
-      
       console.log('📄 Setting document content:', {
-        originalLength: content.length,
-        processedLength: processedContent.length,
-        preview: processedContent.substring(0, 100) + '...',
-        hasText: processedContent.length > 0
+        contentLength: content.length,
+        preview: content.substring(0, 100) + '...'
       });
 
-      this.documentContent = processedContent;
+      this.documentContent = content;
       this.resetChat(); // Reset chat when document content changes
     } catch (error) {
       console.error('❌ Error setting document content:', error);

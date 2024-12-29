@@ -148,33 +148,13 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
       // If we have document content, process and set it
       if (documentContent) {
         try {
-          console.log('📄 Processing provided document content');
-          let textContent = '';
-          
-          // Check if it's base64
-          if (typeof documentContent === 'string' && documentContent.match(/^[A-Za-z0-9+/=]+$/)) {
-            try {
-              console.log('🔄 Attempting to decode base64 content');
-              const decodedBytes = Buffer.from(documentContent, 'base64');
-              textContent = decodedBytes.toString('utf-8');
-              console.log('✅ Successfully decoded base64 content');
-            } catch (decodeError) {
-              console.warn('⚠️ Base64 decode failed, using content as is');
-              textContent = documentContent;
-            }
-          } else {
-            textContent = String(documentContent);
-          }
-
           console.log('📄 Setting document content:', {
-            originalLength: documentContent.length,
-            processedLength: textContent.length,
-            preview: textContent.substring(0, 100) + '...'
+            contentLength: documentContent.length,
+            preview: documentContent.substring(0, 100) + '...'
           });
-          
-          chatServiceRef.setDocumentContent(textContent);
+          chatServiceRef.setDocumentContent(documentContent);
         } catch (err) {
-          console.error('❌ Error processing document content:', err);
+          console.error('❌ Error setting document content:', err);
           console.warn('Will continue without document content');
         }
       }
@@ -183,28 +163,18 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
         console.log('🔄 Fetching document content for envelope:', envelopeId);
         const fetchDocumentContent = async () => {
           try {
-            const documentBase64 = await docuSignService.getSignedDocument(envelopeId);
-            if (!documentBase64) {
+            const content = await docuSignService.getSignedDocument(envelopeId);
+            if (!content) {
               console.warn('⚠️ No document content received');
               return;
             }
             
-            try {
-              console.log('🔄 Processing fetched document content');
-              const decodedBytes = Buffer.from(documentBase64, 'base64');
-              const textContent = decodedBytes.toString('utf-8');
-              
-              console.log('📄 Setting fetched document content:', {
-                base64Length: documentBase64.length,
-                decodedLength: textContent.length,
-                preview: textContent.substring(0, 100) + '...'
-              });
-              
-              chatServiceRef?.setDocumentContent(textContent);
-            } catch (decodeError) {
-              console.error('❌ Error decoding fetched document content:', decodeError);
-              console.warn('Will continue without document content');
-            }
+            console.log('📄 Setting fetched document content:', {
+              contentLength: content.length,
+              preview: content.substring(0, 100) + '...'
+            });
+            
+            chatServiceRef?.setDocumentContent(content);
           } catch (err) {
             console.error('❌ Error fetching document content:', err);
             console.warn('Will continue without document content');
