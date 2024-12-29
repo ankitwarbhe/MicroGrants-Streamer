@@ -285,7 +285,7 @@ export class DocuSignService {
 
       const { access_token } = await authResponse.json();
 
-      // Get the signed document
+      // Get the document content
       const documentResponse = await fetch(`${authServerUrl}/api/docusign/documents`, {
         method: 'POST',
         headers: {
@@ -294,19 +294,33 @@ export class DocuSignService {
         body: JSON.stringify({
           accountId: env.accountId,
           accessToken: access_token,
-          envelopeId
+          envelopeId,
+          includeContent: true
         })
       });
 
       if (!documentResponse.ok) {
         const error = await documentResponse.json();
-        throw new Error(error.message || 'Failed to get signed document');
+        throw new Error(error.message || 'Failed to get document content');
       }
 
-      const { documentBase64 } = await documentResponse.json();
-      return documentBase64;
+      const response = await documentResponse.json();
+      
+      console.log('📄 Raw document response:', {
+        hasResponse: !!response,
+        keys: response ? Object.keys(response) : [],
+        hasDocumentBase64: !!response?.documentBase64,
+        preview: response?.documentBase64 ? response.documentBase64.substring(0, 100) + '...' : 'No content'
+      });
+
+      if (!response?.documentBase64) {
+        console.warn('⚠️ No documentBase64 found in response');
+        return '';
+      }
+
+      return response.documentBase64;
     } catch (error) {
-      console.error('DocuSign error:', error);
+      console.error('❌ Error fetching signed document:', error);
       throw error;
     }
   }

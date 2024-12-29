@@ -158,6 +158,37 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
           console.warn('Will continue without document content');
         }
       }
+      // If we have an envelopeId but no content, fetch it
+      else if (envelopeId) {
+        console.log('🔄 Fetching document content for envelope:', envelopeId);
+        const fetchDocumentContent = async () => {
+          try {
+            const documentBase64 = await docuSignService.getSignedDocument(envelopeId);
+            if (!documentBase64) {
+              console.warn('⚠️ No document content received');
+              return;
+            }
+            
+            // Convert base64 to text for the chatbot
+            try {
+              const decodedBytes = Buffer.from(documentBase64, 'base64');
+              const decodedText = decodedBytes.toString('utf-8');
+              console.log('✅ Document content decoded:', {
+                decodedLength: decodedText.length,
+                preview: decodedText.substring(0, 100) + '...'
+              });
+              chatServiceRef?.setDocumentContent(decodedText);
+            } catch (decodeError) {
+              console.error('❌ Error decoding document content:', decodeError);
+              console.warn('Will continue without document content');
+            }
+          } catch (err) {
+            console.error('❌ Error fetching document content:', err);
+            console.warn('Will continue without document content');
+          }
+        };
+        fetchDocumentContent();
+      }
 
       setError(null);
     } catch (err) {
