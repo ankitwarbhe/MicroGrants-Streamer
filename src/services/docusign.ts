@@ -289,16 +289,14 @@ export class DocuSignService {
       const documentResponse = await fetch(`${authServerUrl}/api/docusign/documents`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'text/plain'  // Request plain text response
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           accountId: env.accountId,
           accessToken: access_token,
           envelopeId,
           includeContent: true,
-          format: 'text',  // Request text format
-          convertPdf: true  // Request PDF conversion to text
+          format: 'text'  // Request text format
         })
       });
 
@@ -312,41 +310,45 @@ export class DocuSignService {
       console.log('📄 Raw document response:', {
         hasResponse: !!response,
         keys: response ? Object.keys(response) : [],
-        hasDocumentBase64: !!response?.documentBase64,
-        hasContent: !!response?.content,
-        preview: response?.content ? response.content.substring(0, 100) + '...' : 
-                response?.documentBase64 ? response.documentBase64.substring(0, 100) + '...' : 
-                'No content'
+        hasDocumentBase64: !!response?.documentBase64
       });
 
-      // First try to get plain text content
-      if (response?.content && typeof response.content === 'string') {
-        return response.content;
-      }
-
-      // If we have base64 content, try to decode it
+      // If we have base64 content, try to extract text
       if (response?.documentBase64) {
         try {
           const decodedBytes = Buffer.from(response.documentBase64, 'base64');
           const decodedText = decodedBytes.toString('utf-8');
           
-          // Clean up the text content
-          const cleanedText = decodedText
-            .replace(/%PDF.*?(?=%|$)/g, '')  // Remove PDF header
-            .replace(/%%EOF.*$/g, '')        // Remove PDF footer
-            .replace(/<<\/.*?>>/g, '')       // Remove PDF object markers
-            .replace(/endobj|endstream|stream/g, '')  // Remove PDF structure markers
-            .replace(/obj|\d+ \d+ obj/g, '') // Remove object references
-            .replace(/[^\x20-\x7E\s]/g, ' ') // Remove non-printable characters
-            .replace(/\s+/g, ' ')            // Normalize whitespace
-            .trim();
+          // Extract text content between stream markers
+          const textContent = decodedText
+            .split(/stream[\r\n]+/)  // Split by stream markers
+            .filter((_, index) => index % 2 === 1)  // Keep content between stream markers
+            .map(part => {
+              // Clean up each text section
+              return part
+                .split(/[\r\n]+endstream/)[0]  // Remove endstream
+                .replace(/^\s+|\s+$/g, '')     // Trim whitespace
+                .replace(/[^\x20-\x7E\s]/g, '') // Keep only printable ASCII
+                .replace(/\s+/g, ' ');         // Normalize spaces
+            })
+            .filter(part => part.length > 0)   // Remove empty parts
+            .join('\n');
 
-          if (cleanedText.length > 0) {
-            return cleanedText;
+          if (textContent.length > 0) {
+            console.log('📄 Extracted text content:', {
+              length: textContent.length,
+              preview: textContent.substring(0, 100) + '...'
+            });
+            return textContent;
           }
         } catch (decodeError) {
-          console.error('❌ Error decoding PDF content:', decodeError);
+          console.error('❌ Error extracting text from PDF:', decodeError);
         }
+      }
+      
+      // If no text could be extracted, try content field
+      if (response?.content) {
+        return response.content;
       }
 
       console.warn('⚠️ No readable content found in response');
