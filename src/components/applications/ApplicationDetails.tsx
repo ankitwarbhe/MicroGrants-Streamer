@@ -152,13 +152,34 @@ export function ApplicationDetails() {
             return;
           }
 
-          console.log('📄 Document content received:', {
-            type: typeof content,
-            length: content.length,
-            preview: content.substring(0, 100)
-          });
-          
-          setDocumentContent(content);
+          // Extract text content from PDF
+          try {
+            // Split by stream markers and extract text content
+            const textContent = content
+              .split(/stream[\r\n]+/)  // Split by stream markers
+              .filter((_, index) => index % 2 === 1)  // Keep content between stream markers
+              .map(part => {
+                // Clean up each text section
+                return part
+                  .split(/[\r\n]+endstream/)[0]  // Remove endstream
+                  .replace(/^\s+|\s+$/g, '')     // Trim whitespace
+                  .replace(/[^\x20-\x7E\s]/g, '') // Keep only printable ASCII
+                  .replace(/\s+/g, ' ');         // Normalize spaces
+              })
+              .filter(part => part.length > 0)   // Remove empty parts
+              .join('\n');
+
+            console.log('📄 Extracted text content:', {
+              type: typeof textContent,
+              length: textContent.length,
+              preview: textContent.substring(0, 100)
+            });
+            
+            setDocumentContent(textContent);
+          } catch (extractError) {
+            console.error('Error extracting text from PDF:', extractError);
+            setDocumentContent('');
+          }
         } catch (err) {
           console.error('Error fetching document content:', err);
           setDocumentContent('');
