@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication, withdrawApplication } from '../../services/applications';
 import { docuSignService } from '../../services/docusign.ts';
 import type { Application, Currency } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download, Undo, Eye } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download, Undo, Eye, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 import { CURRENCY_SYMBOLS } from '../../types';
@@ -358,15 +358,33 @@ export function ApplicationDetails() {
     try {
       const documentBase64 = await docuSignService.getSignedDocument(application.envelope_id);
       
-      // Create a blob from the base64 string
-      const blob = new Blob([Buffer.from(documentBase64, 'base64')], { type: 'application/pdf' });
+      if (!documentBase64) {
+        throw new Error('No document content received');
+      }
+
+      // Create a Blob with PDF MIME type
+      const byteCharacters = atob(documentBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      
+      // Create URL for the blob
       const url = window.URL.createObjectURL(blob);
+      
+      console.log('📄 PDF URL created:', {
+        blobSize: blob.size,
+        url: url
+      });
       
       setPdfUrl(url);
       setShowPdfViewer(true);
       setSignedDocument(documentBase64);
     } catch (error) {
-      setDocumentError(error instanceof Error ? error.message : 'Failed to load document');
+      console.error('❌ Error loading document:', error);
+      setDocumentError(error instanceof Error ? error.message : 'Failed to load PDF document');
     } finally {
       setLoadingDocument(false);
     }
@@ -1147,23 +1165,34 @@ export function ApplicationDetails() {
           <div className="bg-white rounded-lg w-full max-w-6xl h-[90vh] flex flex-col">
             <div className="p-4 flex justify-between items-center border-b">
               <h3 className="text-lg font-medium">
-                {application?.status === 'signed' ? 'Signed Document' : 'Document'}
+                {application?.status === 'signed' ? 'Signed Document' : 'Document Preview'}
               </h3>
-              <button
-                onClick={() => {
-                  setShowPdfViewer(false);
-                  setPdfUrl(null);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <XCircle className="h-6 w-6" />
-              </button>
+              <div className="flex items-center gap-2">
+                <a
+                  href={pdfUrl}
+                  download="document.pdf"
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
+                </a>
+                <button
+                  onClick={() => {
+                    setShowPdfViewer(false);
+                    setPdfUrl(null);
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
             </div>
-            <div className="flex-1 p-4">
+            <div className="flex-1 p-4 bg-gray-100">
               <iframe
                 src={pdfUrl}
-                className="w-full h-full rounded-md"
+                className="w-full h-full rounded-md border-2 border-gray-200 bg-white"
                 title="PDF Viewer"
+                style={{ minHeight: '600px' }}
               />
             </div>
           </div>
