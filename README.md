@@ -1,4 +1,4 @@
-# MicroGrants Streamer  [![Netlify Status](https://api.netlify.com/api/v1/badges/f40abba8-6aed-48ab-9327-8d1ff374f3c3/deploy-status)](https://app.netlify.com/sites/grantstreamer/deploys)
+# MicroGrants Streamer ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎‎ ‎ ‎ ‎ ‎‎ ‎  ‎‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎‎ ‎ ‎  ‎ ‎ ‎  ‎ ‎ ‎ ‎‎  ‎‎ ‎  ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎  [![Netlify Status](https://api.netlify.com/api/v1/badges/f40abba8-6aed-48ab-9327-8d1ff374f3c3/deploy-status)](https://app.netlify.com/sites/grantstreamer/deploys)
 
 A modern web application for streamlined grant application management and disbursement tracking.
 
