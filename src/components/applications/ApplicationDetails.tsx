@@ -771,7 +771,7 @@ export function ApplicationDetails() {
                 <h3 className="text-lg leading-6 font-medium text-gray-900">
                   {application.title}
                 </h3>
-                {(isAdmin && application.has_submitted_payment_details) && (
+                {(isAdmin && application.status === 'signed' && application.has_submitted_payment_details) && (
                   <button
                     onClick={() => !application.payment_completed && setShowUpiQR(true)}
                     disabled={application.payment_completed}
@@ -880,7 +880,7 @@ export function ApplicationDetails() {
                 )}
 
                 {/* Disbursement Tracker - Show when payment details are submitted */}
-                {application.has_submitted_payment_details && (
+                {application.status === 'signed' && application.has_submitted_payment_details && (
                   <div className="sm:col-span-2 mt-6">
                     <DisbursementTracker
                       applicationId={application.id}

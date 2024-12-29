@@ -1,133 +1,102 @@
 # MicroGrants Streamer
 
-A modern web application for managing and streamlining the grant application process, featuring document signing integration and automated disbursement tracking.
+A modern web application for streamlined grant application management and disbursement tracking.
+
+![MicroGrants Streamer Banner](docs/images/banner.png)
 
 ## Features
 
-- **User Authentication**: Secure login and role-based access control (Admin/User)
-- **Grant Application Management**:
-  - Create and edit grant applications
-  - Track application status
-  - View application history
-  - Submit supporting documents
-  
-- **Document Signing Integration**:
-  - DocuSign integration for digital signatures
-  - Automated document routing
-  - Real-time signature status tracking
-  
-- **Payment Processing**:
-  - UPI payment integration
-  - Bank account details collection
-  - Payment status tracking
-  
-- **Disbursement Tracking**:
-  - Multi-step disbursement process
-  - Real-time status updates
-  - Admin verification steps
-  
-- **AI-Powered Chat Assistant**:
-  - Context-aware responses
-  - Document content analysis
-  - Application status queries
-  - Real-time assistance
+### Smart Application Review
+Leverage AI-powered chat assistance for efficient grant application review.
+
+![AI Chat Assistant](docs/images/ai-chat.png)
+
+### Digital Document Signing
+Seamless integration with DocuSign for paperless grant agreements.
+
+![Document Signing](docs/images/document-signing.png)
+
+### Payment Tracking
+Track disbursements and payment status with UPI integration.
+
+![Payment Tracking](docs/images/payment-tracking.png)
 
 ## Technology Stack
 
-- **Frontend**:
-  - React with TypeScript
-  - Tailwind CSS for styling
-  - Lucide icons
-  
-- **Backend**:
-  - Supabase for database and authentication
-  - Node.js server for API integrations
-  
-- **Integrations**:
-  - DocuSign API for document signing
-  - Google's Gemini AI for chat assistance
-  - UPI for payments
-  
+- **Frontend**: React with TypeScript
+- **UI Framework**: Tailwind CSS
+- **AI Integration**: Google's Gemini 1.5 Pro
+- **Document Signing**: DocuSign API
+- **Payment**: UPI Integration
+
 ## Getting Started
 
-1. **Prerequisites**:
-   - Node.js (v14 or higher)
-   - npm or yarn
-   - Supabase account
-   - DocuSign developer account
-   - Google AI API key
+### Prerequisites
 
-2. **Environment Setup**:
-   Create a `.env` file with the following variables:
-   ```env
-   VITE_SUPABASE_URL=your_supabase_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_key
-   VITE_DOCUSIGN_AUTH_SERVER=your_docusign_auth_server
-   VITE_DOCUSIGN_INTEGRATION_KEY=your_docusign_key
-   VITE_DOCUSIGN_USER_ID=your_docusign_user_id
-   VITE_DOCUSIGN_ACCOUNT_ID=your_docusign_account_id
-   VITE_DOCUSIGN_TEMPLATE_ID=your_docusign_template_id
-   VITE_GEMINI_API_KEY=your_gemini_api_key
-   VITE_API_URL=your_api_url
-   ```
+- Node.js (v14 or higher)
+- npm or yarn
+- Google Cloud API Key (for Gemini)
+- DocuSign Developer Account
 
-3. **Installation**:
-   ```bash
-   # Install dependencies
-   npm install
+### Installation
 
-   # Start development server
-   npm run dev
-   ```
-
-## Project Structure
-
-```
-src/
-├── components/         # React components
-│   ├── admin/         # Admin-specific components
-│   ├── applications/  # Application-related components
-│   ├── chat/         # Chat interface components
-│   ├── disbursement/ # Disbursement tracking components
-│   └── layout/       # Layout components
-├── contexts/         # React contexts
-├── lib/             # Utility libraries
-├── pages/           # Page components
-├── services/        # API services
-└── types/           # TypeScript type definitions
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/MicroGrants-Streamer.git
+cd MicroGrants-Streamer
 ```
 
-## Key Features Documentation
+2. Install dependencies:
+```bash
+npm install
+```
 
-### AI Chat Assistant
-The chat assistant uses Google's Gemini AI to provide context-aware responses about applications and documents. It can:
-- Answer questions about application status
-- Explain document content
-- Provide guidance on next steps
-- Help with payment and disbursement queries
+3. Set up environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your API keys and configuration
+```
 
-### Document Signing Flow
-1. Admin approves application
-2. System generates agreement document
-3. Document sent for signatures (applicant first, then admin)
-4. Status tracked in real-time
-5. Signed document available for download
+4. Start the development server:
+```bash
+npm run dev
+```
 
-### Payment Processing
-1. Applicant submits payment details
-2. Admin verifies details
-3. UPI payment initiated
-4. Payment status tracked
-5. Disbursement process begins
+## Usage
+
+### For Applicants
+
+1. Create a new grant application
+2. Fill in required details
+3. Submit for review
+4. Sign approved documents
+5. Track payment status
+
+### For Administrators
+
+1. Review applications with AI assistance
+2. Approve or reject applications
+3. Generate grant agreements
+4. Track disbursements
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Google Gemini for AI capabilities
+- DocuSign for document signing
+- UPI for payment integration
+
+---
+
+*Note: Please add screenshots to the `docs/images` directory and update the image paths accordingly.* 
