@@ -146,18 +146,22 @@ export function ApplicationDetails() {
           if (!application.envelope_id) return;
           const content = await docuSignService.getDocumentContent(application.envelope_id);
           
-          // Convert base64 to text for chatbot
-          try {
-            const decodedBytes = Buffer.from(content, 'base64');
-            const decodedText = decodedBytes.toString('utf-8');
-            console.log('📄 Decoded document content preview:', decodedText.substring(0, 100));
-            setDocumentContent(decodedText);
-          } catch (decodeError) {
-            console.error('Error decoding document content:', decodeError);
+          if (!content) {
+            console.warn('No document content received');
             setDocumentContent('');
+            return;
           }
+
+          console.log('📄 Document content received:', {
+            type: typeof content,
+            length: content.length,
+            preview: content.substring(0, 100)
+          });
+          
+          setDocumentContent(content);
         } catch (err) {
           console.error('Error fetching document content:', err);
+          setDocumentContent('');
         }
       };
       fetchDocContent();

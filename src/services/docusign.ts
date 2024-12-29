@@ -355,22 +355,42 @@ export class DocuSignService {
         throw new Error(error.message || 'Failed to get document content');
       }
 
-      const { content } = await documentResponse.json();
+      const response = await documentResponse.json();
       
+      if (!response || !response.content) {
+        console.warn('No content in response:', response);
+        return '';
+      }
+
+      const { content } = response;
+      
+      // Log the content type and preview
+      console.log('📄 Raw content received:', {
+        type: typeof content,
+        length: content?.length,
+        isBase64: content && typeof content === 'string' && content.match(/^[A-Za-z0-9+/=]+$/),
+        preview: content?.substring?.(0, 100)
+      });
+
       // If content is base64 encoded, decode it
       if (content && typeof content === 'string' && content.match(/^[A-Za-z0-9+/=]+$/)) {
         try {
           const decodedBytes = Buffer.from(content, 'base64');
           const decodedText = decodedBytes.toString('utf-8');
-          console.log('📄 Document content decoded successfully');
+          console.log('📄 Document content decoded successfully:', {
+            decodedLength: decodedText.length,
+            preview: decodedText.substring(0, 100)
+          });
           return decodedText;
         } catch (decodeError) {
           console.error('Error decoding content:', decodeError);
+          // Return the original content if decoding fails
           return content;
         }
       }
       
-      return content;
+      // Return the content as is if it's not base64
+      return content || '';
     } catch (error) {
       console.error('Error fetching document content:', error);
       throw error;
