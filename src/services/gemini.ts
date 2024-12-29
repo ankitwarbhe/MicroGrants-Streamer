@@ -1,4 +1,7 @@
 import { GoogleGenerativeAI, GenerativeModel, ChatSession } from '@google/generative-ai';
+import { supabase } from '../lib/supabase';
+import { getApplicationById } from './applications';
+import type { DisbursementStep } from '../types';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 if (!API_KEY) {
@@ -20,6 +23,7 @@ export class GeminiChatService {
   private isAdmin: boolean = false;
   private currentPage: string = '';
   private documentContent: string = '';
+  private applicationData: string = '';
 
   constructor() {
     this.model = genAI.getGenerativeModel({ model: 'gemini-pro' });
@@ -33,6 +37,46 @@ export class GeminiChatService {
 
   setCurrentPage(page: string) {
     this.currentPage = page;
+    if (page.includes('applications/')) {
+      const applicationId = page.split('applications/')[1];
+      if (applicationId) {
+        this.fetchApplicationData(applicationId);
+      }
+    }
+  }
+
+  private async fetchApplicationData(applicationId: string) {
+    try {
+      const application = await getApplicationById(applicationId);
+      if (application) {
+        this.applicationData = `
+## Application Details
+- ID: ${application.id}
+- Title: ${application.title}
+- Description: ${application.description}
+- Amount Requested: ${application.amount_requested}
+- Currency: ${application.currency}
+- Status: ${application.status}
+- Applicant: ${application.first_name} ${application.last_name}
+- Email: ${application.user_email}
+- Created: ${new Date(application.created_at).toLocaleDateString()}
+${application.feedback ? `- Feedback: ${application.feedback}` : ''}
+${application.payment_details ? `
+## Payment Details
+- Beneficiary Name: ${application.payment_details.beneficiary_name}
+- Bank Branch: ${application.payment_details.bank_branch}
+- Account Type: ${application.payment_details.account_type}
+- IFSC Code: ${application.payment_details.ifsc_code}
+- UPI ID: ${application.payment_details.upi_id}` : ''}
+${application.disbursement_steps ? `
+## Disbursement Status
+${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label}: ${step.status}`).join('\n')}` : ''}`;
+        
+        this.resetChat(); // Reset chat with new application data
+      }
+    } catch (error) {
+      console.error('Error fetching application data:', error);
+    }
   }
 
   setDocumentContent(content: string) {
@@ -74,7 +118,12 @@ export class GeminiChatService {
       // Add page context
       context += `You are currently on the ${this.currentPage} page. `;
 
-      // Add document context if available
+      // Add application data if available
+      if (this.applicationData) {
+        context += `\n\nHere is the application data from the database:\n${this.applicationData}\n\n`;
+      }
+
+      // Add document content if available
       if (this.documentContent) {
         context += `\n\nHere is the relevant document content to reference:\n${this.documentContent}\n\n`;
       }
