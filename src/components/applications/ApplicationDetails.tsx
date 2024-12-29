@@ -458,7 +458,7 @@ export function ApplicationDetails() {
   const isDraft = application.status === 'draft';
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
@@ -1187,8 +1187,8 @@ export function ApplicationDetails() {
         </div>
       )}
 
-      {/* ChatBot - Only show for admin or application owner */}
-      {user && application && (isAdmin || isOwner) && (
+      {/* ChatBot - Show for both admin and application owner */}
+      {user && application && (
         <div className="fixed bottom-4 right-4">
           <ChatBot 
             userId={user.id} 

@@ -4,7 +4,6 @@ import { supabase } from '../../lib/supabase';
 import type { Application, DisbursementStep } from '../../types';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, DollarSign, ChevronLeft, ChevronRight, PenTool, FileSignature } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { ChatBot } from '../chat/ChatBot';
 import { CURRENCY_SYMBOLS } from '../../types';
 
 const STATUS_BADGES = {
@@ -370,24 +369,6 @@ export function AdminDashboard() {
           </div>
           <PaginationControls />
         </>
-      )}
-      
-      {user && (
-        <div className="fixed bottom-4 right-4">
-          <ChatBot 
-            userId={user.id} 
-            isAdmin={true}
-            documentContent={applications.map(app => `
-Application ID: ${app.id}
-Title: ${app.title}
-Status: ${app.status}
-Amount: ${formatAmount(app.amount_requested, app.currency)}
-Applicant: ${app.first_name} ${app.last_name}
-Email: ${app.user_email}
-Description: ${app.description}
-            `).join('\n\n')}
-          />
-        </div>
       )}
     </div>
   );

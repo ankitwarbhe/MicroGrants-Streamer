@@ -5,6 +5,15 @@ import { useLocation } from 'react-router-dom';
 import { docuSignService } from '../../services/docusign';
 import ReactMarkdown from 'react-markdown';
 
+// Sample greetings that will rotate
+const GREETINGS = [
+  "👋 Welcome! How can I assist you today?",
+  "Hello there! Ready to help you with your application!",
+  "Hi! Let's explore your application details together.",
+  "Greetings! I'm here to help answer your questions.",
+  "Welcome back! What would you like to know about the application?"
+];
+
 // Sample questions that will rotate
 const SAMPLE_QUESTIONS = [
   [
@@ -78,8 +87,11 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const [sampleQuestions] = useState(() => 
+  const [currentQuestions, setCurrentQuestions] = useState(() => 
     SAMPLE_QUESTIONS[Math.floor(Math.random() * SAMPLE_QUESTIONS.length)]
+  );
+  const [greeting] = useState(() => 
+    GREETINGS[Math.floor(Math.random() * GREETINGS.length)]
   );
 
   // Get current page from pathname
@@ -137,20 +149,32 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
     scrollToBottom();
   }, [messages]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputMessage.trim() || isLoading || !chatServiceRef) return;
+  const refreshQuestions = () => {
+    let newQuestions;
+    do {
+      newQuestions = SAMPLE_QUESTIONS[Math.floor(Math.random() * SAMPLE_QUESTIONS.length)];
+    } while (newQuestions === currentQuestions);
+    setCurrentQuestions(newQuestions);
+  };
 
-    const userMessage = inputMessage.trim();
+  const handleQuestionClick = async (question: string) => {
+    setInputMessage(question);
+    await handleSubmit(null, question);
+    refreshQuestions();
+  };
+
+  const handleSubmit = async (e: React.FormEvent | null, forcedMessage?: string) => {
+    if (e) e.preventDefault();
+    const messageToSend = forcedMessage || inputMessage;
+    if (!messageToSend.trim() || isLoading || !chatServiceRef) return;
+
     setInputMessage('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setMessages(prev => [...prev, { role: 'user', content: messageToSend.trim() }]);
     setIsLoading(true);
     setError(null);
 
     try {
-      console.log('Sending message:', userMessage);
-      const response = await chatServiceRef.sendMessage(userMessage);
-      console.log('Received response:', response);
+      const response = await chatServiceRef.sendMessage(messageToSend.trim());
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
     } catch (error) {
       console.error('Chat error:', error);
@@ -158,10 +182,7 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
       setError(errorMessage);
       setMessages(prev => [
         ...prev,
-        { 
-          role: 'assistant', 
-          content: `Error: ${errorMessage}` 
-        }
+        { role: 'assistant', content: `Error: ${errorMessage}` }
       ]);
     } finally {
       setIsLoading(false);
@@ -209,26 +230,29 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
               </div>
             )}
             {!error && messages.length === 0 && (
-              <div className="text-center text-gray-500 mt-2">
-                <p className="text-xs mb-4">
-                  {isAdmin 
-                    ? "Hello! I can help you review this application. I'll answer questions based on the application data and documents."
-                    : "Hello! I can help you with your application. I'll answer questions based on your application data and documents."}
-                </p>
-                <div className="text-left bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs font-medium mb-2">Try asking questions like:</p>
-                  {sampleQuestions.map((question, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setInputMessage(question);
-                        inputRef.current?.focus();
-                      }}
-                      className="block w-full text-left text-xs text-gray-600 hover:text-indigo-600 mb-2 cursor-pointer"
-                    >
-                      • {question}
-                    </button>
-                  ))}
+              <div className="space-y-4">
+                <div className="text-center">
+                  <p className="text-sm font-medium text-gray-800 mb-1">{greeting}</p>
+                  <p className="text-xs text-gray-500">
+                    {isAdmin 
+                      ? "I'll help you review this application using the available data and documents."
+                      : "I'll help you with your application using the available data and documents."}
+                  </p>
+                </div>
+                
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs font-medium mb-3 text-gray-700">Quick Questions:</p>
+                  <div className="space-y-2">
+                    {currentQuestions.map((question, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleQuestionClick(question)}
+                        className="w-full text-left p-2 rounded-md text-xs bg-white border border-gray-200 hover:border-indigo-500 hover:text-indigo-600 transition-colors duration-150 ease-in-out"
+                      >
+                        {question}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
