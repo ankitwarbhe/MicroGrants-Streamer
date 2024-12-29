@@ -289,14 +289,14 @@ export class DocuSignService {
       const documentResponse = await fetch(`${authServerUrl}/api/docusign/documents`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Content-Transfer-Encoding': 'base64'  // Request base64 encoding
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           accountId: env.accountId,
           accessToken: access_token,
           envelopeId,
-          includeContent: true
+          includeContent: true,
+          format: 'text'  // Request text format
         })
       });
 
@@ -319,21 +319,7 @@ export class DocuSignService {
         return '';
       }
 
-      // Try to decode base64 to text
-      try {
-        const decodedBytes = Buffer.from(response.documentBase64, 'base64');
-        const decodedText = decodedBytes.toString('utf-8');
-        
-        console.log('📄 Decoded document content:', {
-          decodedLength: decodedText.length,
-          preview: decodedText.substring(0, 100) + '...'
-        });
-        
-        return decodedText;
-      } catch (decodeError) {
-        console.warn('⚠️ Failed to decode base64, returning raw content');
-        return response.documentBase64;
-      }
+      return response.documentBase64;
     } catch (error) {
       console.error('❌ Error fetching signed document:', error);
       throw error;

@@ -169,19 +169,20 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
               return;
             }
 
-            // Convert PDF content to readable text
+            // Extract text from PDF content
             try {
-              // Remove PDF header/footer markers and binary data
+              // Extract text between stream tags
               const textContent = pdfContent
-                .replace(/%PDF.*?(?=%|$)/g, '') // Remove PDF header
-                .replace(/%%EOF.*$/g, '')  // Remove PDF footer
-                .replace(/[\x00-\x1F\x7F-\xFF]/g, ' ') // Remove binary characters
-                .replace(/\s+/g, ' ') // Normalize whitespace
-                .trim();
+                .split(/stream\n|\nendstream/)  // Split by stream markers
+                .filter((part, index) => index % 2 === 1)  // Keep only content between stream tags
+                .join(' ')  // Join extracted parts
+                .replace(/^\s+|\s+$/g, '')  // Trim whitespace
+                .replace(/\s+/g, ' ')  // Normalize spaces
+                .replace(/[^\x20-\x7E\s]/g, ' ');  // Remove non-printable characters
 
-              console.log('📄 Converted PDF to text:', {
+              console.log('📄 Extracted text from PDF:', {
                 originalLength: pdfContent.length,
-                convertedLength: textContent.length,
+                extractedLength: textContent.length,
                 preview: textContent.substring(0, 100) + '...'
               });
 
@@ -191,7 +192,7 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
                 console.warn('⚠️ No readable text extracted from PDF');
               }
             } catch (conversionError) {
-              console.error('❌ Error converting PDF to text:', conversionError);
+              console.error('❌ Error extracting text from PDF:', conversionError);
               console.warn('Will continue without document content');
             }
           } catch (err) {
