@@ -98,5 +98,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - UPI for payment integration
 
 ---
-
-*Note: Please add screenshots to the `docs/images` directory and update the image paths accordingly.* 
