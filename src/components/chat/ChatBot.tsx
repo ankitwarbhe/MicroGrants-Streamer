@@ -163,18 +163,37 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
         console.log('🔄 Fetching document content for envelope:', envelopeId);
         const fetchDocumentContent = async () => {
           try {
-            const content = await docuSignService.getSignedDocument(envelopeId);
-            if (!content) {
+            const pdfContent = await docuSignService.getSignedDocument(envelopeId);
+            if (!pdfContent) {
               console.warn('⚠️ No document content received');
               return;
             }
-            
-            console.log('📄 Setting fetched document content:', {
-              contentLength: content.length,
-              preview: content.substring(0, 100) + '...'
-            });
-            
-            chatServiceRef?.setDocumentContent(content);
+
+            // Convert PDF content to readable text
+            try {
+              // Remove PDF header/footer markers and binary data
+              const textContent = pdfContent
+                .replace(/%PDF.*?(?=%|$)/g, '') // Remove PDF header
+                .replace(/%%EOF.*$/g, '')  // Remove PDF footer
+                .replace(/[\x00-\x1F\x7F-\xFF]/g, ' ') // Remove binary characters
+                .replace(/\s+/g, ' ') // Normalize whitespace
+                .trim();
+
+              console.log('📄 Converted PDF to text:', {
+                originalLength: pdfContent.length,
+                convertedLength: textContent.length,
+                preview: textContent.substring(0, 100) + '...'
+              });
+
+              if (textContent.length > 0) {
+                chatServiceRef?.setDocumentContent(textContent);
+              } else {
+                console.warn('⚠️ No readable text extracted from PDF');
+              }
+            } catch (conversionError) {
+              console.error('❌ Error converting PDF to text:', conversionError);
+              console.warn('Will continue without document content');
+            }
           } catch (err) {
             console.error('❌ Error fetching document content:', err);
             console.warn('Will continue without document content');
