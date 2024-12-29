@@ -1,5 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { supabase } from '../lib/supabase';
+import { GoogleGenerativeAI, GenerativeModel, ChatSession } from '@google/generative-ai';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 if (!API_KEY) {
@@ -15,10 +14,17 @@ export interface ChatMessage {
 }
 
 export class GeminiChatService {
+  private model: GenerativeModel;
+  private chat: ChatSession | null = null;
   private userId: string = '';
   private isAdmin: boolean = false;
   private currentPage: string = '';
   private documentContent: string = '';
+
+  constructor() {
+    this.model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    this.resetChat();
+  }
 
   setUser(userId: string, isAdmin: boolean) {
     this.userId = userId;
@@ -31,37 +37,57 @@ export class GeminiChatService {
 
   setDocumentContent(content: string) {
     this.documentContent = content;
+    this.resetChat(); // Reset chat when document content changes
+  }
+
+  private resetChat() {
+    try {
+      this.chat = this.model.startChat({
+        history: [],
+        generationConfig: {
+          maxOutputTokens: 1000,
+          temperature: 0.7,
+          topP: 0.8,
+          topK: 40,
+        },
+      });
+    } catch (error) {
+      console.error('Error resetting chat:', error);
+      throw new Error('Failed to reset chat service');
+    }
   }
 
   async sendMessage(message: string): Promise<string> {
     try {
-      // Include document content in context if available
-      const context = this.documentContent 
-        ? `Document content: ${this.documentContent}\n\nUser query: ${message}`
-        : message;
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: context,
-          userId: this.userId,
-          isAdmin: this.isAdmin,
-          currentPage: this.currentPage,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send message');
+      if (!this.chat) {
+        throw new Error('Chat service not initialized');
       }
 
-      const data = await response.json();
-      return data.response;
+      // Create context for the message
+      let context = '';
+      
+      // Add role context
+      context += this.isAdmin 
+        ? 'You are an AI assistant helping an admin review grant applications. '
+        : 'You are an AI assistant helping a grant applicant. ';
+
+      // Add page context
+      context += `You are currently on the ${this.currentPage} page. `;
+
+      // Add document context if available
+      if (this.documentContent) {
+        context += `\n\nHere is the relevant document content to reference:\n${this.documentContent}\n\n`;
+      }
+
+      // Add the user's message
+      const fullPrompt = `${context}\n\nUser: ${message}`;
+
+      const result = await this.chat.sendMessage(fullPrompt);
+      const response = await result.response;
+      return response.text();
     } catch (error) {
       console.error('Error sending message:', error);
-      throw error;
+      throw new Error('Failed to send message');
     }
   }
 } 

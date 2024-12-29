@@ -245,7 +245,7 @@ export function AdminDashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto px-4 py-8">
       <div className="flex justify-end mb-4">
         <div className="relative inline-block text-left">
           <select
@@ -373,10 +373,21 @@ export function AdminDashboard() {
       )}
       
       {user && (
-        <ChatBot 
-          userId={user.id} 
-          isAdmin={true}
-        />
+        <div className="fixed bottom-4 right-4">
+          <ChatBot 
+            userId={user.id} 
+            isAdmin={true}
+            documentContent={applications.map(app => `
+Application ID: ${app.id}
+Title: ${app.title}
+Status: ${app.status}
+Amount: ${formatAmount(app.amount_requested, app.currency)}
+Applicant: ${app.first_name} ${app.last_name}
+Email: ${app.user_email}
+Description: ${app.description}
+            `).join('\n\n')}
+          />
+        </div>
       )}
     </div>
   );

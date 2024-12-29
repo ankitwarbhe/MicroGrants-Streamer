@@ -1135,17 +1135,6 @@ export function ApplicationDetails() {
         </div>
       )}
 
-      {user && application && (
-        <div className="fixed bottom-4 right-4">
-          <ChatBot 
-            userId={user.id} 
-            isAdmin={isAdmin} 
-            envelopeId={application.envelope_id || undefined}
-            documentContent={documentContent}
-          />
-        </div>
-      )}
-
       {/* Add UPI QR Code Modal */}
       {showUpiQR && application?.payment_details && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-[60]">
@@ -1195,6 +1184,18 @@ export function ApplicationDetails() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ChatBot - Only show for admin or application owner */}
+      {user && application && (isAdmin || isOwner) && (
+        <div className="fixed bottom-4 right-4">
+          <ChatBot 
+            userId={user.id} 
+            isAdmin={isAdmin} 
+            envelopeId={application.envelope_id || undefined}
+            documentContent={documentContent}
+          />
         </div>
       )}
     </div>
