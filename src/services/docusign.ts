@@ -296,7 +296,7 @@ export class DocuSignService {
           accessToken: access_token,
           envelopeId,
           includeContent: true,
-          format: 'text'  // Request text format
+          format: 'pdf'  // Request PDF format
         })
       });
 
@@ -310,49 +310,27 @@ export class DocuSignService {
       console.log('📄 Raw document response:', {
         hasResponse: !!response,
         keys: response ? Object.keys(response) : [],
-        hasDocumentBase64: !!response?.documentBase64
+        hasDocumentBase64: !!response?.documentBase64,
+        preview: response?.documentBase64 ? response.documentBase64.substring(0, 100) + '...' : 'No content'
       });
 
-      // If we have base64 content, try to extract text
-      if (response?.documentBase64) {
-        try {
-          const decodedBytes = Buffer.from(response.documentBase64, 'base64');
-          const decodedText = decodedBytes.toString('utf-8');
-          
-          // Extract text content between stream markers
-          const textContent = decodedText
-            .split(/stream[\r\n]+/)  // Split by stream markers
-            .filter((_, index) => index % 2 === 1)  // Keep content between stream markers
-            .map(part => {
-              // Clean up each text section
-              return part
-                .split(/[\r\n]+endstream/)[0]  // Remove endstream
-                .replace(/^\s+|\s+$/g, '')     // Trim whitespace
-                .replace(/[^\x20-\x7E\s]/g, '') // Keep only printable ASCII
-                .replace(/\s+/g, ' ');         // Normalize spaces
-            })
-            .filter(part => part.length > 0)   // Remove empty parts
-            .join('\n');
-
-          if (textContent.length > 0) {
-            console.log('📄 Extracted text content:', {
-              length: textContent.length,
-              preview: textContent.substring(0, 100) + '...'
-            });
-            return textContent;
-          }
-        } catch (decodeError) {
-          console.error('❌ Error extracting text from PDF:', decodeError);
-        }
-      }
-      
-      // If no text could be extracted, try content field
-      if (response?.content) {
-        return response.content;
+      if (!response?.documentBase64) {
+        throw new Error('No document content in response');
       }
 
-      console.warn('⚠️ No readable content found in response');
-      return '';
+      // Clean up base64 string
+      const base64Clean = response.documentBase64
+        .replace(/^data:application\/pdf;base64,/, '')  // Remove data URL prefix if present
+        .replace(/[\n\r]/g, '')  // Remove any newlines
+        .trim();  // Remove any extra whitespace
+
+      // Validate base64 string
+      if (base64Clean.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(base64Clean)) {
+        console.error('❌ Invalid base64 string received');
+        throw new Error('Invalid document format received');
+      }
+
+      return base64Clean;
     } catch (error) {
       console.error('❌ Error fetching signed document:', error);
       throw error;

@@ -362,26 +362,54 @@ export function ApplicationDetails() {
         throw new Error('No document content received');
       }
 
-      // Create a Blob with PDF MIME type
-      const byteCharacters = atob(documentBase64);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      // Clean up base64 string - remove data URL prefix if present
+      const base64Clean = documentBase64.replace(/^data:application\/pdf;base64,/, '');
+      
+      try {
+        // Create a Blob with PDF MIME type
+        const byteCharacters = atob(base64Clean);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        
+        // Create URL for the blob
+        const url = window.URL.createObjectURL(blob);
+        
+        console.log('📄 PDF URL created:', {
+          base64Length: base64Clean.length,
+          blobSize: blob.size,
+          url: url
+        });
+        
+        setPdfUrl(url);
+        setShowPdfViewer(true);
+        setSignedDocument(documentBase64);
+      } catch (blobError) {
+        console.error('❌ Error creating PDF blob:', blobError);
+        
+        // Fallback: Try creating blob directly from base64
+        try {
+          console.log('Attempting fallback PDF creation method...');
+          const response = await fetch(`data:application/pdf;base64,${base64Clean}`);
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          
+          console.log('📄 PDF URL created (fallback method):', {
+            blobSize: blob.size,
+            url: url
+          });
+          
+          setPdfUrl(url);
+          setShowPdfViewer(true);
+          setSignedDocument(documentBase64);
+        } catch (fallbackError) {
+          console.error('❌ Fallback method failed:', fallbackError);
+          throw new Error('Failed to create viewable PDF document');
+        }
       }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'application/pdf' });
-      
-      // Create URL for the blob
-      const url = window.URL.createObjectURL(blob);
-      
-      console.log('📄 PDF URL created:', {
-        blobSize: blob.size,
-        url: url
-      });
-      
-      setPdfUrl(url);
-      setShowPdfViewer(true);
-      setSignedDocument(documentBase64);
     } catch (error) {
       console.error('❌ Error loading document:', error);
       setDocumentError(error instanceof Error ? error.message : 'Failed to load PDF document');
