@@ -110,22 +110,39 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
       // Create context for the message
       let context = '';
       
+      // Add strict instruction about using only provided information
+      context += `You are an AI assistant that can ONLY answer questions using the information provided below. 
+      If the answer cannot be found in the provided information, respond with "I apologize, but I can only answer based on the information in the application data and documents, and I don't see that information in the provided content."
+      DO NOT make assumptions or provide information from outside these sources.
+      
+      `;
+
       // Add role context
       context += this.isAdmin 
-        ? 'You are an AI assistant helping an admin review grant applications. Format your responses in markdown with proper headings, lists, and emphasis where appropriate. '
-        : 'You are an AI assistant helping a grant applicant. Format your responses in markdown with proper headings, lists, and emphasis where appropriate. ';
+        ? 'You are helping an admin review grant applications. '
+        : 'You are helping a grant applicant with their application. ';
 
       // Add page context
-      context += `You are currently on the ${this.currentPage} page. `;
+      context += `You are currently on the ${this.currentPage} page.\n\n`;
+
+      // Add available data sources explanation
+      context += `Available information sources:\n`;
+      if (this.applicationData) {
+        context += `1. Application Database Data\n`;
+      }
+      if (this.documentContent) {
+        context += `2. Document Content\n`;
+      }
+      context += `\n`;
 
       // Add application data if available
       if (this.applicationData) {
-        context += `\n\nHere is the application data from the database:\n${this.applicationData}\n\n`;
+        context += `\n=== APPLICATION DATABASE DATA ===\n${this.applicationData}\n\n`;
       }
 
       // Add document content if available
       if (this.documentContent) {
-        context += `\n\nHere is the relevant document content to reference:\n${this.documentContent}\n\n`;
+        context += `\n=== DOCUMENT CONTENT ===\n${this.documentContent}\n\n`;
       }
 
       // Add formatting instructions
@@ -135,10 +152,11 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
       - Use - or * for bullet points
       - Use > for important quotes or notes
       - Use \`code\` for technical terms or values
-      - Structure your response clearly with proper spacing\n\n`;
+      - Structure your response clearly with proper spacing
+      - Always cite whether your answer comes from the application data or document content\n\n`;
 
       // Add the user's message
-      const fullPrompt = `${context}\n\nUser: ${message}`;
+      const fullPrompt = `${context}\n\nUser Query: ${message}\n\nRemember: Only answer using the information provided above. If the information isn't in the sources provided, say so.`;
 
       const result = await this.chat.sendMessage(fullPrompt);
       const response = await result.response;

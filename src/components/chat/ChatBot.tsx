@@ -5,6 +5,60 @@ import { useLocation } from 'react-router-dom';
 import { docuSignService } from '../../services/docusign';
 import ReactMarkdown from 'react-markdown';
 
+// Sample questions that will rotate
+const SAMPLE_QUESTIONS = [
+  [
+    "What is the current status of this application?",
+    "What is the total amount requested in this grant?",
+    "What is the project's main objective?"
+  ],
+  [
+    "Can you show me the payment details for this application?",
+    "What is the applicant's full name and contact information?",
+    "When was the last update made to this application?"
+  ],
+  [
+    "What is the current stage of disbursement?",
+    "Has the admin provided any feedback on this application?",
+    "What are the complete bank account details?"
+  ],
+  [
+    "What is the status of document signatures?",
+    "What is the beneficiary's UPI ID?",
+    "What is the IFSC code provided?"
+  ],
+  [
+    "What is the project timeline mentioned?",
+    "What are the specific deliverables listed?",
+    "What is the current completion status?"
+  ],
+  [
+    "What supporting documents have been submitted?",
+    "Are there any pending requirements?",
+    "What is the bank branch name provided?"
+  ],
+  [
+    "What type of bank account is specified?",
+    "What is the exact disbursement progress?",
+    "When was the document signed?"
+  ],
+  [
+    "What is the applicant's preferred payment method?",
+    "Has the payment been completed?",
+    "What is the grant agreement status?"
+  ],
+  [
+    "What specific feedback was given by reviewers?",
+    "Are there any conditions attached to the approval?",
+    "What is the currency of the requested amount?"
+  ],
+  [
+    "What is the complete payment information?",
+    "Has the document been fully executed?",
+    "What are the next steps in the process?"
+  ]
+];
+
 interface ChatBotProps {
   userId: string;
   isAdmin: boolean;
@@ -24,6 +78,9 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [sampleQuestions] = useState(() => 
+    SAMPLE_QUESTIONS[Math.floor(Math.random() * SAMPLE_QUESTIONS.length)]
+  );
 
   // Get current page from pathname
   const getCurrentPage = () => {
@@ -153,11 +210,26 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
             )}
             {!error && messages.length === 0 && (
               <div className="text-center text-gray-500 mt-2">
-                <p className="text-xs">
+                <p className="text-xs mb-4">
                   {isAdmin 
-                    ? "Hello! I can help you review applications and provide insights. Ask me anything about the applications."
-                    : "Hello! I can help you with your grant application. Ask me anything about your application."}
+                    ? "Hello! I can help you review this application. I'll answer questions based on the application data and documents."
+                    : "Hello! I can help you with your application. I'll answer questions based on your application data and documents."}
                 </p>
+                <div className="text-left bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs font-medium mb-2">Try asking questions like:</p>
+                  {sampleQuestions.map((question, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setInputMessage(question);
+                        inputRef.current?.focus();
+                      }}
+                      className="block w-full text-left text-xs text-gray-600 hover:text-indigo-600 mb-2 cursor-pointer"
+                    >
+                      • {question}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             {messages.map((message, index) => (
