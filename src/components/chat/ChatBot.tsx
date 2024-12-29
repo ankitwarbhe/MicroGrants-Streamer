@@ -101,7 +101,10 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
   const getCurrentPage = () => {
     const path = location.pathname;
     if (path === '/') return 'home';
-    if (path.startsWith('/applications/')) return 'application';
+    if (path.startsWith('/applications/')) {
+      const match = path.match(/\/applications\/([^\/]+)/);
+      return match ? `application/${match[1]}` : 'application';
+    }
     if (path === '/dashboard') return 'dashboard';
     if (path === '/about') return 'about';
     return path.replace('/', '');
@@ -134,8 +137,13 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
         hasDocumentContent: !!documentContent,
         hasEnvelopeId: !!envelopeId 
       });
+
+      // Extract application ID from the current page
+      const applicationId = currentPage.startsWith('application/') ? currentPage.split('/')[1] : null;
+      console.log('🔍 Extracted application ID:', applicationId);
+
       chatServiceRef.setUser(userId, isAdmin);
-      chatServiceRef.setCurrentPage(currentPage);
+      chatServiceRef.setCurrentPage(currentPage, applicationId);
 
       // If we have document content, set it in the chat service
       if (documentContent) {
@@ -147,35 +155,10 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
           chatServiceRef.setDocumentContent(documentContent);
         } catch (err) {
           console.error('❌ Error setting document content:', err);
-          // Don't set error state, just log it
           console.warn('Will continue without document content');
         }
       }
-      // If we have an envelopeId but no content, fetch it
-      else if (envelopeId) {
-        console.log('🔄 Fetching document content for envelope:', envelopeId);
-        const fetchDocumentContent = async () => {
-          try {
-            const content = await docuSignService.getSignedDocument(envelopeId);
-            if (!content) {
-              console.warn('⚠️ No document content received, continuing with application data only');
-              return;
-            }
-            console.log('✅ Document content fetched:', {
-              contentLength: content?.length || 0,
-              preview: content ? content.substring(0, 100) + '...' : 'No content'
-            });
-            chatServiceRef?.setDocumentContent(content);
-          } catch (err) {
-            console.error('❌ Error fetching document content:', err);
-            // Don't set error state, just log it
-            console.warn('Will continue without document content');
-          }
-        };
-        fetchDocumentContent();
-      }
 
-      // Only set error if chat service fails to initialize
       setError(null);
     } catch (err) {
       console.error('❌ Error initializing chat service:', err);

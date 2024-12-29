@@ -44,17 +44,25 @@ export class GeminiChatService {
     this.isAdmin = isAdmin;
   }
 
-  setCurrentPage(page: string) {
+  setCurrentPage(page: string, applicationId?: string | null) {
     console.log('📍 Setting current page:', page);
     this.currentPage = page;
+
+    // If applicationId is provided directly, use it
+    if (applicationId) {
+      console.log('🔄 Using provided application ID:', applicationId);
+      this.fetchApplicationData(applicationId);
+      return;
+    }
+
+    // Otherwise try to extract from page path
     if (page.includes('applications/')) {
-      // Extract application ID, handling both /applications/123 and /applications/123/
       const match = page.match(/applications\/([^\/]+)/);
-      const applicationId = match ? match[1] : null;
+      const extractedId = match ? match[1] : null;
       
-      if (applicationId) {
-        console.log('🔄 Fetching application data for ID:', applicationId);
-        this.fetchApplicationData(applicationId);
+      if (extractedId) {
+        console.log('🔄 Fetching application data for ID:', extractedId);
+        this.fetchApplicationData(extractedId);
       } else {
         console.warn('⚠️ Could not extract application ID from path:', page);
       }
@@ -68,6 +76,7 @@ export class GeminiChatService {
       
       if (!application) {
         console.warn('⚠️ No application found for ID:', applicationId);
+        this.applicationData = '';
         return;
       }
 
@@ -112,12 +121,14 @@ ${application.disbursement_steps.map((step: DisbursementStep) => `- ${step.label
       } catch (formatError) {
         console.error('❌ Error formatting application data:', formatError);
         console.log('🔍 Application object structure:', JSON.stringify(application, null, 2));
+        this.applicationData = '';
       }
     } catch (error) {
       console.error('❌ Error fetching application data:', error);
       if (error instanceof Error) {
         console.error('Error details:', error.message);
       }
+      this.applicationData = '';
     }
   }
 
