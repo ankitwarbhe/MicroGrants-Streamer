@@ -107,8 +107,20 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
     return path.replace('/', '');
   };
 
+  // Check if chatbot should be visible
+  const shouldShowChatbot = () => {
+    const currentPage = getCurrentPage();
+    // Hide on user dashboard
+    if (currentPage === 'dashboard' && !isAdmin) {
+      return false;
+    }
+    return true;
+  };
+
   // Initialize chat service with document content
   useEffect(() => {
+    if (!shouldShowChatbot()) return;
+
     try {
       if (!chatServiceRef) {
         console.log('🚀 Creating new GeminiChatService instance');
@@ -252,6 +264,11 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
     }
   };
 
+  // Don't render if chatbot should not be visible
+  if (!shouldShowChatbot()) {
+    return null;
+  }
+
   return (
     <div className="fixed bottom-4 right-4 z-50">
       {isOpen && (
@@ -285,6 +302,21 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
                       ? "I'll help you review this application using the available data and documents."
                       : "I'll help you with your application using the available data and documents."}
                   </p>
+                </div>
+                {/* Show initial questions */}
+                <div className="bg-gray-50 rounded-lg p-3 mt-4">
+                  <p className="text-xs font-medium text-gray-700 mb-2">Quick Questions:</p>
+                  <div className="space-y-2">
+                    {currentQuestions.map((question, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleQuestionClick(question)}
+                        className="w-full text-left p-2 rounded-md text-xs bg-white border border-gray-200 hover:border-indigo-500 hover:text-indigo-600 transition-colors duration-150 ease-in-out"
+                      >
+                        {question}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
