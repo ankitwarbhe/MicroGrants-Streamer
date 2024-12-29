@@ -68,8 +68,8 @@ export class GeminiChatService {
       
       // Add role context
       context += this.isAdmin 
-        ? 'You are an AI assistant helping an admin review grant applications. '
-        : 'You are an AI assistant helping a grant applicant. ';
+        ? 'You are an AI assistant helping an admin review grant applications. Format your responses in markdown with proper headings, lists, and emphasis where appropriate. '
+        : 'You are an AI assistant helping a grant applicant. Format your responses in markdown with proper headings, lists, and emphasis where appropriate. ';
 
       // Add page context
       context += `You are currently on the ${this.currentPage} page. `;
@@ -78,6 +78,15 @@ export class GeminiChatService {
       if (this.documentContent) {
         context += `\n\nHere is the relevant document content to reference:\n${this.documentContent}\n\n`;
       }
+
+      // Add formatting instructions
+      context += `\nFormat your response using markdown syntax:
+      - Use ## for section headings
+      - Use * or ** for emphasis
+      - Use - or * for bullet points
+      - Use > for important quotes or notes
+      - Use \`code\` for technical terms or values
+      - Structure your response clearly with proper spacing\n\n`;
 
       // Add the user's message
       const fullPrompt = `${context}\n\nUser: ${message}`;

@@ -3,6 +3,7 @@ import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import { GeminiChatService, ChatMessage } from '../../services/gemini';
 import { useLocation } from 'react-router-dom';
 import { docuSignService } from '../../services/docusign';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatBotProps {
   userId: string;
@@ -129,11 +130,11 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
   return (
     <div className="fixed bottom-4 right-4 z-50">
       {isOpen && (
-        <div className="absolute bottom-16 right-0 w-80 h-[400px] bg-white rounded-lg shadow-xl flex flex-col">
+        <div className="absolute bottom-16 right-0 w-96 h-[500px] bg-white rounded-lg shadow-xl flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b">
             <h3 className="text-sm font-semibold text-gray-800">
-              {isAdmin ? 'Admin AI Assistant' : 'AI Assistant'}
+              {isAdmin ? 'Admin Assistant' : 'Grant Assistant'}
             </h3>
             <button
               onClick={toggleChat}
@@ -154,8 +155,8 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
               <div className="text-center text-gray-500 mt-2">
                 <p className="text-xs">
                   {isAdmin 
-                    ? "Hello Admin! I can help you review applications and provide insights. Ask me anything about the applications."
-                    : "Hello! I can help you with your grant applications. Ask me anything about your applications."}
+                    ? "Hello! I can help you review applications and provide insights. Ask me anything about the applications."
+                    : "Hello! I can help you with your grant application. Ask me anything about your application."}
                 </p>
               </div>
             )}
@@ -167,13 +168,19 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
                 }`}
               >
                 <div
-                  className={`max-w-[85%] rounded-lg p-2 ${
+                  className={`max-w-[90%] rounded-lg p-3 ${
                     message.role === 'user'
                       ? 'bg-indigo-600 text-white'
                       : 'bg-gray-100 text-gray-800'
                   }`}
                 >
-                  <p className="text-xs whitespace-pre-wrap">{message.content}</p>
+                  {message.role === 'user' ? (
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  ) : (
+                    <div className="prose prose-sm max-w-none">
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -197,13 +204,13 @@ export function ChatBot({ userId, isAdmin, envelopeId, documentContent }: ChatBo
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
                 disabled={!chatServiceRef || !!error}
-                className="flex-1 resize-none rounded-lg border border-gray-300 p-2 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent min-h-[36px] max-h-24 disabled:opacity-50 disabled:bg-gray-50"
+                className="flex-1 resize-none rounded-lg border border-gray-300 p-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent min-h-[36px] max-h-24 disabled:opacity-50 disabled:bg-gray-50"
                 rows={1}
               />
               <button
                 type="submit"
                 disabled={isLoading || !inputMessage.trim() || !chatServiceRef || !!error}
-                className="bg-indigo-600 text-white rounded-lg p-1.5 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-indigo-600 text-white rounded-lg p-2 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send className="h-4 w-4" />
               </button>
