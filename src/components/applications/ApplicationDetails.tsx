@@ -485,6 +485,8 @@ export function ApplicationDetails() {
   };
 
   const handleSaveToDrive = () => {
+    if (!application?.id) return;
+    
     // Store the application ID for use after auth
     localStorage.setItem('pendingSaveDocumentId', application.id);
 
@@ -496,8 +498,14 @@ export function ApplicationDetails() {
     const dropboxAuthUrl = new URL('https://www.dropbox.com/oauth2/authorize');
     dropboxAuthUrl.searchParams.append('client_id', import.meta.env.VITE_DROPBOX_CLIENT_ID);
     dropboxAuthUrl.searchParams.append('response_type', 'code');
-    dropboxAuthUrl.searchParams.append('redirect_uri', `${window.location.origin}/dropbox/callback`);
+    dropboxAuthUrl.searchParams.append('redirect_uri', `${window.location.origin}/auth/dropbox/callback`);
     dropboxAuthUrl.searchParams.append('state', state);
+    dropboxAuthUrl.searchParams.append('scope', 'files.content.write');
+
+    console.log('Redirecting to Dropbox auth:', {
+      redirectUri: `${window.location.origin}/auth/dropbox/callback`,
+      state
+    });
 
     // Redirect to Dropbox auth
     window.location.href = dropboxAuthUrl.toString();

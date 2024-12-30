@@ -13,11 +13,14 @@ export function DropboxCallback() {
 
   useEffect(() => {
     async function handleCallback() {
+      console.log('DropboxCallback: Starting callback handler');
       try {
         // Check if user is authenticated
         if (!user) {
+          console.log('DropboxCallback: No user found, checking session');
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) {
+            console.log('DropboxCallback: No session found, redirecting to auth');
             localStorage.setItem('dropboxCallbackUrl', window.location.href);
             navigate('/auth?redirect=' + encodeURIComponent(window.location.pathname + window.location.search));
             return;
@@ -30,6 +33,13 @@ export function DropboxCallback() {
         const code = searchParams.get('code');
         const returnedState = searchParams.get('state');
         const storedState = localStorage.getItem('dropboxAuthState');
+
+        console.log('DropboxCallback: Received params:', {
+          code: code ? 'present' : 'missing',
+          returnedState,
+          storedState,
+          fullUrl: window.location.href
+        });
 
         // Verify state to prevent CSRF attacks
         if (!returnedState || returnedState !== storedState) {
@@ -58,7 +68,7 @@ export function DropboxCallback() {
             grant_type: 'authorization_code',
             client_id: import.meta.env.VITE_DROPBOX_CLIENT_ID,
             client_secret: import.meta.env.VITE_DROPBOX_CLIENT_SECRET,
-            redirect_uri: `${window.location.origin}/dropbox/callback`,
+            redirect_uri: `${window.location.origin}/auth/dropbox/callback`,
           }).toString(),
         });
 
@@ -73,6 +83,7 @@ export function DropboxCallback() {
         }
 
         const { access_token: accessToken } = await tokenResponse.json();
+        console.log('DropboxCallback: Successfully obtained access token');
 
         setStatus('Fetching application details...');
         // Get the pending document ID from localStorage
