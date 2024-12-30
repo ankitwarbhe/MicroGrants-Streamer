@@ -18,18 +18,36 @@ export function DropboxCallback() {
         if (!user) {
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) {
-            throw new Error('Please log in to save documents');
+            // Store the current URL in localStorage
+            localStorage.setItem('dropboxCallbackUrl', window.location.href);
+            // Redirect to login
+            navigate('/auth?redirect=' + encodeURIComponent(window.location.pathname + window.location.hash));
+            return;
           }
         }
 
         setStatus('Getting access token...');
-        // Get access token from URL hash
+        // Get access token from URL hash and verify state
         const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
         const accessToken = params.get('access_token');
+        const returnedState = params.get('state');
+        const storedState = localStorage.getItem('dropboxAuthState');
+
+        // Verify state to prevent CSRF attacks
+        if (!returnedState || returnedState !== storedState) {
+          throw new Error('Invalid state parameter. Please try again.');
+        }
+
+        // Clean up state
+        localStorage.removeItem('dropboxAuthState');
 
         if (!accessToken) {
-          throw new Error('No access token received from Dropbox');
+          console.error('Auth response:', {
+            hash: hash,
+            params: Object.fromEntries(params.entries())
+          });
+          throw new Error('No access token received from Dropbox. Please make sure pop-ups are allowed and try again.');
         }
 
         setStatus('Fetching application details...');

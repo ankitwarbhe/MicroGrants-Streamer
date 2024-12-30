@@ -492,10 +492,19 @@ export function ApplicationDetails() {
       // Initialize Dropbox OAuth
       const clientId = import.meta.env.VITE_DROPBOX_CLIENT_ID;
       const redirectUri = `${window.location.origin}/auth/dropbox/callback`;
-      const dropboxAuthUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}`;
+      const state = Math.random().toString(36).substring(7); // Generate random state
       
-      // Store current application ID in localStorage for after auth
+      // Store state in localStorage to verify later
+      localStorage.setItem('dropboxAuthState', state);
       localStorage.setItem('pendingSaveDocumentId', application.id);
+      
+      const dropboxAuthUrl = `https://www.dropbox.com/oauth2/authorize?` + 
+        `client_id=${encodeURIComponent(clientId)}` +
+        `&response_type=token` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&state=${encodeURIComponent(state)}` +
+        `&token_access_type=offline` +
+        `&scope=files.content.write`;
       
       // Redirect to Dropbox auth
       window.location.href = dropboxAuthUrl;
