@@ -2,15 +2,26 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { docuSignService } from '../../services/docusign';
 import { getApplicationById } from '../../services/applications';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function DropboxCallback() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState('Initializing...');
+  const { user } = useAuth();
 
   useEffect(() => {
     async function handleCallback() {
       try {
+        // Check if user is authenticated
+        if (!user) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            throw new Error('Please log in to save documents');
+          }
+        }
+
         setStatus('Getting access token...');
         // Get access token from URL hash
         const hash = window.location.hash.substring(1);

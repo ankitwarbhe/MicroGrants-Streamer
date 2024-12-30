@@ -61,7 +61,14 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/auth/dropbox/callback" element={<DropboxCallback />} />
+          <Route
+            path="/auth/dropbox/callback"
+            element={
+              <ProtectedRoute>
+                <DropboxCallback />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
     </BrowserRouter>
