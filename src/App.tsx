@@ -8,6 +8,7 @@ import { AboutPage } from './pages/AboutPage';
 import { NewApplicationPage } from './pages/NewApplicationPage';
 import { ApplicationDetailsPage } from './pages/ApplicationDetailsPage';
 import { SignatureRequest } from './components/docusign/SignatureRequest';
+import { DropboxCallback } from './components/auth/DropboxCallback';
 
 export default function App() {
   return (
@@ -60,6 +61,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/auth/dropbox/callback" element={<DropboxCallback />} />
         </Routes>
       </div>
     </BrowserRouter>

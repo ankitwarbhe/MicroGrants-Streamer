@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicationById, updateApplication, submitApplication, approveApplication, rejectApplication, withdrawApplication } from '../../services/applications';
 import { docuSignService } from '../../services/docusign.ts';
 import type { Application, Currency } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download, Undo, Eye, X } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Calendar, DollarSign, Edit2, Send, PenTool, FileSignature, Download, Undo, Eye, X, Upload } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ChatBot } from '../chat/ChatBot';
 import { CURRENCY_SYMBOLS } from '../../types';
@@ -83,6 +83,7 @@ export function ApplicationDetails() {
   const [showUpiQR, setShowUpiQR] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [documentContent, setDocumentContent] = useState<string>('');
+  const [savingToDrive, setSavingToDrive] = useState(false);
 
   const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
   const isOwner = application?.user_id === user?.id;
@@ -483,6 +484,29 @@ export function ApplicationDetails() {
     }
   };
 
+  const handleSaveToDrive = async () => {
+    if (!application?.envelope_id) return;
+    
+    setSavingToDrive(true);
+    try {
+      // Initialize Dropbox OAuth
+      const clientId = import.meta.env.VITE_DROPBOX_CLIENT_ID;
+      const redirectUri = `${window.location.origin}/auth/dropbox/callback`;
+      const dropboxAuthUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}`;
+      
+      // Store current application ID in localStorage for after auth
+      localStorage.setItem('pendingSaveDocumentId', application.id);
+      
+      // Redirect to Dropbox auth
+      window.location.href = dropboxAuthUrl;
+    } catch (error) {
+      console.error('Error saving to drive:', error);
+      alert('Failed to save document to drive. Please try again.');
+    } finally {
+      setSavingToDrive(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-4">
@@ -842,14 +866,26 @@ export function ApplicationDetails() {
                     <dt className="text-sm font-medium text-gray-500 mb-2">Actions</dt>
                     <dd className="flex items-center space-x-4">
                       {(isAdmin || application.status === 'signed') && application.envelope_id && (
-                        <button
-                          onClick={handleViewDocument}
-                          disabled={loadingDocument}
-                          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          {loadingDocument ? 'Loading...' : application.status === 'signed' ? 'View Signed Document' : 'View Document'}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleViewDocument}
+                            disabled={loadingDocument}
+                            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            {loadingDocument ? 'Loading...' : application.status === 'signed' ? 'View Signed Document' : 'View Document'}
+                          </button>
+                          {isAdmin && application.status === 'signed' && (
+                            <button
+                              onClick={handleSaveToDrive}
+                              disabled={loadingDocument || savingToDrive}
+                              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              {savingToDrive ? 'Saving...' : 'Save to Drive'}
+                            </button>
+                          )}
+                        </div>
                       )}
                       
                       {(isOwner || isAdmin) && application.status === 'signed' && (
