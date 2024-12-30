@@ -484,36 +484,23 @@ export function ApplicationDetails() {
     }
   };
 
-  const handleSaveToDrive = async () => {
-    if (!application?.envelope_id) return;
-    
-    setSavingToDrive(true);
-    try {
-      // Initialize Dropbox OAuth
-      const clientId = import.meta.env.VITE_DROPBOX_CLIENT_ID;
-      const redirectUri = `${window.location.origin}/auth/dropbox/callback`;
-      const state = Math.random().toString(36).substring(7); // Generate random state
-      
-      // Store state in localStorage to verify later
-      localStorage.setItem('dropboxAuthState', state);
-      localStorage.setItem('pendingSaveDocumentId', application.id);
-      
-      const dropboxAuthUrl = `https://www.dropbox.com/oauth2/authorize?` + 
-        `client_id=${encodeURIComponent(clientId)}` +
-        `&response_type=token` +
-        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-        `&state=${encodeURIComponent(state)}` +
-        `&token_access_type=offline` +
-        `&scope=files.content.write`;
-      
-      // Redirect to Dropbox auth
-      window.location.href = dropboxAuthUrl;
-    } catch (error) {
-      console.error('Error saving to drive:', error);
-      alert('Failed to save document to drive. Please try again.');
-    } finally {
-      setSavingToDrive(false);
-    }
+  const handleSaveToDrive = () => {
+    // Store the application ID for use after auth
+    localStorage.setItem('pendingSaveDocumentId', application.id);
+
+    // Generate and store state for CSRF protection
+    const state = Math.random().toString(36).substring(7);
+    localStorage.setItem('dropboxAuthState', state);
+
+    // Construct authorization URL for code flow
+    const dropboxAuthUrl = new URL('https://www.dropbox.com/oauth2/authorize');
+    dropboxAuthUrl.searchParams.append('client_id', import.meta.env.VITE_DROPBOX_CLIENT_ID);
+    dropboxAuthUrl.searchParams.append('response_type', 'code');
+    dropboxAuthUrl.searchParams.append('redirect_uri', `${window.location.origin}/dropbox/callback`);
+    dropboxAuthUrl.searchParams.append('state', state);
+
+    // Redirect to Dropbox auth
+    window.location.href = dropboxAuthUrl.toString();
   };
 
   if (loading) {

@@ -18,20 +18,17 @@ export function DropboxCallback() {
         if (!user) {
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) {
-            // Store the current URL in localStorage
             localStorage.setItem('dropboxCallbackUrl', window.location.href);
-            // Redirect to login
-            navigate('/auth?redirect=' + encodeURIComponent(window.location.pathname + window.location.hash));
+            navigate('/auth?redirect=' + encodeURIComponent(window.location.pathname + window.location.search));
             return;
           }
         }
 
-        setStatus('Getting access token...');
-        // Get access token from URL hash and verify state
-        const hash = window.location.hash.substring(1);
-        const params = new URLSearchParams(hash);
-        const accessToken = params.get('access_token');
-        const returnedState = params.get('state');
+        setStatus('Getting authorization code...');
+        // Get authorization code from URL search params
+        const searchParams = new URLSearchParams(window.location.search);
+        const code = searchParams.get('code');
+        const returnedState = searchParams.get('state');
         const storedState = localStorage.getItem('dropboxAuthState');
 
         // Verify state to prevent CSRF attacks
@@ -42,13 +39,40 @@ export function DropboxCallback() {
         // Clean up state
         localStorage.removeItem('dropboxAuthState');
 
-        if (!accessToken) {
+        if (!code) {
           console.error('Auth response:', {
-            hash: hash,
-            params: Object.fromEntries(params.entries())
+            params: Object.fromEntries(searchParams.entries())
           });
-          throw new Error('No access token received from Dropbox. Please make sure pop-ups are allowed and try again.');
+          throw new Error('No authorization code received from Dropbox. Please try again.');
         }
+
+        setStatus('Exchanging code for access token...');
+        // Exchange code for access token
+        const tokenResponse = await fetch('https://api.dropboxapi.com/oauth2/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            code,
+            grant_type: 'authorization_code',
+            client_id: import.meta.env.VITE_DROPBOX_CLIENT_ID,
+            client_secret: import.meta.env.VITE_DROPBOX_CLIENT_SECRET,
+            redirect_uri: `${window.location.origin}/dropbox/callback`,
+          }).toString(),
+        });
+
+        if (!tokenResponse.ok) {
+          const errorData = await tokenResponse.json().catch(() => null);
+          console.error('Token exchange failed:', {
+            status: tokenResponse.status,
+            statusText: tokenResponse.statusText,
+            error: errorData
+          });
+          throw new Error('Failed to exchange authorization code for access token');
+        }
+
+        const { access_token: accessToken } = await tokenResponse.json();
 
         setStatus('Fetching application details...');
         // Get the pending document ID from localStorage
