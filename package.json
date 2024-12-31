@@ -16,6 +16,7 @@
     "buffer": "^6.0.3",
     "cors": "^2.8.5",
     "crypto-browserify": "^3.12.1",
+    "date-fns": "^4.1.0",
     "docusign-esign": "^8.0.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
