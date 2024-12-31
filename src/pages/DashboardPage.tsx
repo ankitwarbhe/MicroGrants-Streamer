@@ -13,7 +13,7 @@ export function DashboardPage() {
     <div className={`mx-auto px-4 sm:px-6 lg:px-8 py-8 ${isAdmin ? 'max-w-[95%]' : 'max-w-7xl'}`}>
       <div className="sm:flex sm:items-center sm:justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
-          {isAdmin ? 'Admin Dashboard' : 'My Applications'}
+          {isAdmin ? '' : 'My Applications'}
         </h1>
         {!isAdmin && (
           <Link

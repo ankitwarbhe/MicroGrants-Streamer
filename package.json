@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
+    "@headlessui/react": "^2.2.0",
     "@supabase/supabase-js": "^2.39.7",
     "buffer": "^6.0.3",
     "cors": "^2.8.5",
@@ -27,6 +28,7 @@
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",
     "react-router-dom": "^6.22.2",
+    "recharts": "^2.15.0",
     "stream-browserify": "^3.0.0",
     "util": "^0.12.5"
   },

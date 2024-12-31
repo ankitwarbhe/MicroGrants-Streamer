@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import type { Application, DisbursementStep } from '../../types';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, DollarSign, ChevronLeft, ChevronRight, PenTool, FileSignature } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, DollarSign, ChevronLeft, ChevronRight, PenTool, FileSignature, BarChart } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { CURRENCY_SYMBOLS } from '../../types';
+import { AnalyticsModal } from './AnalyticsModal';
 
 const STATUS_BADGES = {
   draft: { color: 'bg-gray-100 text-gray-800', icon: Clock },
@@ -47,6 +48,7 @@ export function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<'all' | Application['status']>('all');
   const { user } = useAuth();
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   
   const ITEMS_PER_PAGE = 5;
 
@@ -245,6 +247,17 @@ export function AdminDashboard() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+        <button
+          onClick={() => setIsAnalyticsOpen(true)}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          <BarChart className="h-5 w-5 mr-2" />
+          View Analytics
+        </button>
+      </div>
+
       <div className="flex justify-end mb-4">
         <div className="relative inline-block text-left">
           <select
@@ -370,6 +383,11 @@ export function AdminDashboard() {
           <PaginationControls />
         </>
       )}
+
+      <AnalyticsModal
+        isOpen={isAnalyticsOpen}
+        onClose={() => setIsAnalyticsOpen(false)}
+      />
     </div>
   );
 }
