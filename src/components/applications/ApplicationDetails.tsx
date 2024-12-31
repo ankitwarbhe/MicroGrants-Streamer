@@ -879,7 +879,7 @@ export function ApplicationDetails() {
                             <Eye className="h-4 w-4 mr-2" />
                             {loadingDocument ? 'Loading...' : application.status === 'signed' ? 'View Signed Document' : 'View Document'}
                           </button>
-                          {isAdmin && application.status === 'signed' && (
+                          {application.status === 'signed' && (
                             <button
                               onClick={handleSaveToDropbox}
                               disabled={loadingDocument || savingToDropbox}
