@@ -83,7 +83,7 @@ export function ApplicationDetails() {
   const [showUpiQR, setShowUpiQR] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [documentContent, setDocumentContent] = useState<string>('');
-  const [savingToDrive, setSavingToDrive] = useState(false);
+  const [savingToDropbox, setSavingToDropbox] = useState(false);
 
   const isAdmin = user?.user_metadata?.role === 'admin' || user?.app_metadata?.role === 'admin';
   const isOwner = application?.user_id === user?.id;
@@ -484,7 +484,7 @@ export function ApplicationDetails() {
     }
   };
 
-  const handleSaveToDrive = () => {
+  const handleSaveToDropbox = () => {
     if (!application?.id) return;
     
     // Store the application ID for use after auth
@@ -507,8 +507,8 @@ export function ApplicationDetails() {
       state
     });
 
-    // Redirect to Dropbox auth
-    window.location.href = dropboxAuthUrl.toString();
+    // Open Dropbox auth in new tab
+    window.open(dropboxAuthUrl.toString(), '_blank', 'noopener,noreferrer');
   };
 
   if (loading) {
@@ -881,12 +881,12 @@ export function ApplicationDetails() {
                           </button>
                           {isAdmin && application.status === 'signed' && (
                             <button
-                              onClick={handleSaveToDrive}
-                              disabled={loadingDocument || savingToDrive}
+                              onClick={handleSaveToDropbox}
+                              disabled={loadingDocument || savingToDropbox}
                               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                             >
                               <Upload className="h-4 w-4 mr-2" />
-                              {savingToDrive ? 'Saving...' : 'Save to Drive'}
+                              {savingToDropbox ? 'Saving...' : 'Save to Dropbox'}
                             </button>
                           )}
                         </div>

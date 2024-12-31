@@ -12,7 +12,7 @@ Leverage AI-powered chat assistance for efficient grant application review.
 ![AI Chat Assistant](docs/images/ai-chat.png)
 
 ### Digital Document Signing
-Seamless integration with DocuSign for paperless grant agreements.
+Seamless integration with DocuSign for paperless grant agreements and Dropbox for secure document storage.
 
 ![Document Signing](docs/images/document-signing.png)
 
@@ -27,6 +27,7 @@ Track disbursements and payment status with UPI integration.
 - **UI Framework**: Tailwind CSS
 - **AI Integration**: Google's Gemini 1.5 Pro
 - **Document Signing**: DocuSign API
+- **Document Storage**: Dropbox API
 - **Payment**: UPI Integration
 
 ## Getting Started
@@ -37,6 +38,7 @@ Track disbursements and payment status with UPI integration.
 - npm or yarn
 - Google Cloud API Key (for Gemini)
 - DocuSign Developer Account
+- Dropbox App Credentials
 
 ### Installation
 
@@ -77,7 +79,8 @@ npm run dev
 1. Review applications with AI assistance
 2. Approve or reject applications
 3. Generate grant agreements
-4. Track disbursements
+4. Save signed documents to Dropbox
+5. Track disbursements
 
 ## Contributing
 
